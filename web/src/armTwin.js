@@ -2,6 +2,7 @@ import { onBridgeMessage, sendCommand, setMirroring, setRelaxed } from "./robotL
 import { applyPose } from "./robot.js";
 import { BODY_JOINTS as BODY } from "./so101.js";
 import { armToUrdf, identityMap } from "./jointMap.js";
+import { setStepStatus } from "./settingsSteps.js";
 
 /* =========================================================================
    ARM TWIN: measuring the sim <-> hardware joint map with the render
@@ -24,13 +25,23 @@ import { armToUrdf, identityMap } from "./jointMap.js";
    the hardware in front of you. Picture compared to arm, no algebra between.
    ========================================================================= */
 const LABEL = {
-  shoulder_pan: "J1 Pan", shoulder_lift: "J2 Lift", elbow_flex: "J3 Elbow",
-  wrist_flex: "J4 W-Flex", wrist_roll: "J5 W-Roll"
+  shoulder_pan: "Pan", shoulder_lift: "Lift", elbow_flex: "Elbow",
+  wrist_flex: "Wrist flex", wrist_roll: "Wrist roll"
 };
 const DEG = Math.PI / 180;
 
 const el = (id) => document.getElementById(id);
 
+/* One row per joint: name, direction, what the arm reads, offset slider. */
+function buildRows() {
+  el("twin-rows").innerHTML = BODY.map((j) => `
+    <div class="twin-row">
+      <span>${LABEL[j]}</span>
+      <button id="twin-sign-${j}" class="sign" title="Flip this joint's direction">+</button>
+      <span id="twin-read-${j}" class="reading">0.0°</span>
+      <input type="range" id="twin-offset-${j}" class="range" min="-180" max="180" step="0.5" value="0" aria-label="${LABEL[j]} offset">
+    </div>`).join("");
+}
 
 // Each arm has its own map; `arm` says which one the tool is measuring.
 export const twin = {
@@ -60,14 +71,12 @@ function paint() {
     const readout = el(`twin-read-${j}`);
     if (!signBtn) return;
     signBtn.textContent = m.sign > 0 ? "+" : "−";
-    signBtn.className = m.sign > 0
-      ? "w-6 h-6 rounded bg-slate-800 border border-slate-700 text-slate-300 font-mono"
-      : "w-6 h-6 rounded bg-amber-900/70 border border-amber-600 text-amber-200 font-mono";
+    signBtn.toggleAttribute("data-flipped", m.sign < 0);
     slider.value = m.offset_deg;
     const reported = twin.present ? twin.present[j] : null;
     readout.textContent = reported === null || reported === undefined
       ? `${m.offset_deg.toFixed(1)}°`
-      : `${m.offset_deg.toFixed(1)}° · arm ${reported.toFixed(1)}° → sim ${(sim[i] / DEG).toFixed(1)}°`;
+      : `offset ${m.offset_deg.toFixed(1)}°, arm ${reported.toFixed(1)}° is model ${(sim[i] / DEG).toFixed(1)}°`;
   });
   const g = el("twin-gripper-read");
   if (g) g.textContent = twin.present ? `${(twin.present.gripper ?? 0).toFixed(0)}%` : "--";
@@ -75,10 +84,10 @@ function paint() {
 
 let presentTimer = null;
 
-function hint(text, tone = "slate") {
+function hint(text, tone = "") {
   const h = el("twin-hint");
   h.textContent = text;
-  h.className = `text-[10px] leading-snug text-${tone}-${tone === "slate" ? "500" : "400"}`;
+  h.dataset.tone = tone;
 }
 
 function setMirror(on) {
@@ -86,7 +95,7 @@ function setMirror(on) {
   // toggling a button that then does nothing: every failure here is silent
   // otherwise, because the render simply carries on running off the IK.
   if (on && !sendCommand({ cmd: "telemetry", on: true, arm: twin.arm })) {
-    hint("Bridge is not linked. Press Bridge in the header first, then mirror.", "amber");
+    hint("The bridge is not linked. Link it at the top right, then mirror.", "warn");
     return;
   }
   if (!on) sendCommand({ cmd: "telemetry", on: false, arm: twin.arm });
@@ -100,17 +109,14 @@ function setMirror(on) {
     twin.present = null;
     presentTimer = setTimeout(() => {
       if (twin.mirror && !twin.present) {
-        hint(`No telemetry arriving from the ${twin.arm}. Check ${twin.arm === "leader" ? "LEADER_PORT" : "ARM_PORT"} is set, and watch the bridge console.`, "amber");
+        hint(`No readings are arriving from the ${twin.arm}. Check ${twin.arm === "leader" ? "LEADER_PORT" : "ARM_PORT"} is set, and watch the bridge's terminal.`, "warn");
       }
     }, 2500);
   }
-  const btn = el("btn-twin-mirror");
-  btn.className = on
-    ? "flex-1 py-1.5 rounded-md bg-cyan-900/80 border border-cyan-600 text-cyan-200 text-xs font-mono transition"
-    : "flex-1 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-mono transition";
-  el("twin-mirror-label").textContent = on ? "Mirroring Real Arm" : "Mirror Real Arm";
+  el("btn-twin-mirror").setAttribute("aria-pressed", String(on));
+  el("twin-mirror-label").textContent = on ? "Mirroring the real arm" : "Mirror the real arm";
   hint(on
-    ? "Waiting for the first reading from the arm..."
+    ? "Waiting for the first reading from the arm."
     : "Link the bridge, then mirror to measure the joint map against the real arm.");
 }
 
@@ -123,11 +129,12 @@ async function save() {
       body: JSON.stringify(twin.map)
     });
     const body = await res.json();
-    note.textContent = res.ok ? "Saved · restart the bridge" : `Rejected: ${body.error}`;
-    note.className = res.ok ? "text-[10px] font-mono text-emerald-400" : "text-[10px] font-mono text-rose-400";
+    note.textContent = res.ok ? "Saved. Restart the bridge to load it." : `Not saved: ${body.error}`;
+    note.dataset.tone = res.ok ? "ok" : "bad";
+    if (res.ok) checkMaps();
   } catch (err) {
-    note.textContent = `Save failed: ${err.message}`;
-    note.className = "text-[10px] font-mono text-rose-400";
+    note.textContent = `Not saved: ${err.message}`;
+    note.dataset.tone = "bad";
   }
 }
 
@@ -153,14 +160,31 @@ function selectArm(arm) {
   twin.arm = arm;
   twin.present = null;
   for (const b of document.querySelectorAll("#twin-arm-select [data-arm]")) {
-    const on = b.dataset.arm === arm;
-    b.className = on ? "flex-1 py-1 rounded-md bg-cyan-600 text-white" : "flex-1 py-1 rounded-md text-slate-300";
+    b.classList.toggle("is-on", b.dataset.arm === arm);
   }
   el("twin-save-note").textContent = "";
   loadMap(arm);
 }
 
+/* The step's status: are both arms' maps on disk? Asks the bridge. */
+async function checkMaps() {
+  try {
+    const [follower, leader] = await Promise.all(["follower", "leader"].map(async (arm) => {
+      const res = await fetch(`/api/joint-map?arm=${arm}`);
+      if (!res.ok) throw new Error(res.statusText);
+      return !!(await res.json());
+    }));
+    if (follower && leader) setStepStatus("joint-map", "Both measured");
+    else if (follower || leader) setStepStatus("joint-map", `${follower ? "Leader" : "Follower"} not measured`, "warn");
+    else setStepStatus("joint-map", "Not measured", "warn");
+  } catch {
+    setStepStatus("joint-map", "Needs the bridge", "off");
+  }
+}
+
 export function initArmTwin() {
+  buildRows();
+  checkMaps();
   loadMap(twin.arm);
   for (const b of document.querySelectorAll("#twin-arm-select [data-arm]")) {
     b.addEventListener("click", () => selectArm(b.dataset.arm));
@@ -198,7 +222,7 @@ export function initArmTwin() {
       }
       paint();
     } else if (msg.type === "log" && twin.mirror && /telemetry|dry run/i.test(msg.msg || "")) {
-      hint(msg.msg, "amber");
+      hint(msg.msg, "warn");
     } else if (msg.type === "ready" && msg.present) {
       twin.present = msg.present;
       paint();
@@ -208,4 +232,3 @@ export function initArmTwin() {
   paint();
 }
 
-export { BODY as TWIN_JOINTS, LABEL as TWIN_LABELS };

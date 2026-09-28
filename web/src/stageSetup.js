@@ -1,4 +1,5 @@
 import { loadPrefs, savePrefs, listCameras } from "./prefs.js";
+import { setStepStatus } from "./settingsSteps.js";
 
 /* Settings-page controls for the stage rig: camera roles and hand -> arm. */
 const el = (id) => document.getElementById(id);
@@ -27,11 +28,17 @@ function fillSelect(select, cams, current) {
 }
 
 function paintToggles(p) {
-  el("btn-leader-side").textContent = `Leader: ${p.leaderSide} hand`;
-  el("btn-flip-labels").textContent = p.flipLabels ? "Hand labels: flipped" : "Hand labels: as reported";
-  el("btn-flip-labels").className = p.flipLabels
-    ? "py-1.5 rounded bg-amber-900/60 border border-amber-600 text-amber-200 transition"
-    : "py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition";
+  el("btn-leader-side").textContent = p.leaderSide === "left" ? "Left hand" : "Right hand";
+  el("btn-flip-labels").textContent = p.flipLabels ? "Flipped" : "As reported";
+  el("btn-flip-labels").setAttribute("aria-pressed", String(p.flipLabels));
+}
+
+function paintStatus(p = loadPrefs()) {
+  setStepStatus("cameras", p.handsCameraId ? "Chosen" : "Default camera", p.handsCameraId ? "off" : "warn");
+  const summary = `The arms are ${p.armSpacingCm} cm apart and stop ${p.minGapCm} cm short of each other. ` +
+    `Each may reach ${Math.max(0, (p.armSpacingCm - p.minGapCm) / 2).toFixed(1)} cm toward the other from its base.`;
+  el("layout-summary").textContent = summary;
+  setStepStatus("layout", `${p.armSpacingCm} cm apart`);
 }
 
 async function refresh() {
@@ -47,7 +54,7 @@ async function refresh() {
 }
 
 export function initStageSetup() {
-  el("sel-cam-hands").addEventListener("change", (ev) => savePrefs({ handsCameraId: ev.target.value }));
+  el("sel-cam-hands").addEventListener("change", (ev) => paintStatus(savePrefs({ handsCameraId: ev.target.value })));
   el("sel-cam-follower").addEventListener("change", (ev) => savePrefs({ followerCameraId: ev.target.value }));
   el("btn-cam-refresh").addEventListener("click", refresh);
   el("btn-leader-side").addEventListener("click", () => {
@@ -64,8 +71,10 @@ export function initStageSetup() {
       const v = parseFloat(input.value);
       if (Number.isFinite(v) && v >= 0) savePrefs({ [key]: v });
       input.value = loadPrefs()[key];
+      paintStatus();
     });
   }
   paintToggles(loadPrefs());
+  paintStatus();
   refresh();
 }

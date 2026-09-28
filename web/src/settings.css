@@ -1,0 +1,274 @@
+/* Settings-only styles; the design system is in ui/theme.css. */
+
+body.settings {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Steps | the open step | the twin. */
+.settings-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 15rem minmax(22rem, 30rem) 1fr;
+  gap: 1.25rem;
+  padding: 0 2rem 1.5rem;
+}
+
+/* ---- Setup steps ------------------------------------------------------ */
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding-top: 0.5rem;
+}
+.step {
+  display: grid;
+  grid-template-columns: 1.75rem 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 0.6rem;
+  row-gap: 0.3rem;
+  align-items: center;
+  padding: 0.7rem 0.8rem;
+  border-radius: 18px;
+  color: var(--ink-60);
+  transition: background 0.15s, color 0.15s;
+}
+.step:hover { background: rgba(255, 255, 255, 0.55); }
+.step[aria-current="step"] {
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--ink);
+  box-shadow: 0 10px 30px -18px rgba(0, 11, 26, 0.35);
+}
+.step-n {
+  grid-row: span 2;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: rgba(0, 11, 26, 0.06);
+  font-variant-numeric: tabular-nums;
+}
+.step[aria-current="step"] .step-n { background: var(--ember); color: #fff; }
+.step-name { font-weight: 500; font-size: 0.95rem; }
+.step .tag { justify-self: start; max-width: 100%; overflow: hidden; }
+.step .tag:empty { display: none; }
+.step-extra { margin-top: 0.75rem; }
+.step-extra .step-n,
+.step-extra[aria-current="step"] .step-n { background: transparent; }
+
+/* ---- The open step ---------------------------------------------------- */
+.panel {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1.75rem 1.75rem 2rem;
+  scrollbar-width: thin;
+}
+.panel-title {
+  font-size: 2.1rem;
+  line-height: 1.1;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+}
+.panel-lede {
+  margin: 0.6rem 0 1.5rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--ink-60);
+  max-width: 34em;
+}
+.panel-sub { font-size: 1rem; font-weight: 600; }
+.divider { height: 1px; background: var(--line); margin: 1.5rem 0; }
+
+.device-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.8rem 1rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+}
+
+/* Camera preview, 4:3 like the capture. */
+.camera-view {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #e9e3d9;
+}
+.camera-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 1.5rem;
+  background: #e9e3d9;
+}
+/* Its display: flex would otherwise beat Tailwind's .hidden. */
+.camera-empty.hidden { display: none; }
+
+.capture {
+  padding: 1rem;
+  border-radius: 18px;
+  background: var(--sun-soft);
+}
+
+.corners {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+.corner {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  text-align: left;
+  padding: 0.6rem 0.8rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid transparent;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+.corner small {
+  grid-column: 1;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--ink-40);
+  font-variant-numeric: tabular-nums;
+}
+.corner .dot { grid-column: 2; grid-row: 1 / span 2; }
+.corner:hover { background: #fff; }
+/* The corner the next capture goes to. */
+.corner[data-next] { border-color: var(--sun); background: #fff; }
+
+.readout,
+.readout-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--ink-60);
+}
+.readout b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.readout-foot { margin-top: 0.35rem; font-size: 0.75rem; color: var(--ink-40); }
+.readout-box {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.6);
+  font-size: 0.75rem;
+  color: var(--ink-60);
+}
+.readout-box b { font-size: 1.1rem; font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+/* One joint of the joint map: name, direction, reading, offset slider. */
+.twin-rows { display: grid; gap: 1rem; margin-top: 1.25rem; }
+.twin-row {
+  display: grid;
+  grid-template-columns: 5.5rem 2.25rem 1fr;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 0.75rem;
+  row-gap: 0.45rem;
+  font-size: 0.85rem;
+}
+.twin-row > span { font-weight: 500; }
+.twin-row .sign {
+  height: 2rem;
+  border-radius: 10px;
+  background: rgba(0, 11, 26, 0.06);
+  font-weight: 600;
+}
+.twin-row .sign[data-flipped] { background: var(--sun); }
+.twin-row .reading {
+  justify-self: end;
+  color: var(--ink-60);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.twin-row .range { grid-column: 1 / -1; }
+
+.slider-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  row-gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--ink-60);
+}
+.slider-row b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.slider-row .range { grid-column: 1 / -1; }
+
+.guards { display: grid; gap: 0.75rem; margin-top: 0.75rem; font-size: 0.9rem; line-height: 1.5; color: var(--ink-60); }
+.guards b { color: var(--ink); font-weight: 600; }
+
+/* ---- The twin ---------------------------------------------------------- */
+.viewport {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+.viewport-top {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  z-index: 2;
+}
+.viewport-bottom {
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  bottom: 1rem;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  z-index: 2;
+  pointer-events: none;
+}
+.viewport-bottom > * { pointer-events: auto; }
+.servo-rows {
+  width: 17rem;
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.9rem 1rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* ---- Narrow screens: steps become a strip, panels stack ---------------- */
+@media (max-width: 1100px) {
+  body.settings { height: auto; overflow: auto; }
+  header { padding-left: 1rem !important; padding-right: 1rem !important; }
+  .settings-grid { grid-template-columns: 1fr; padding: 0 1rem 1rem; }
+  .steps { flex-direction: row; overflow-x: auto; padding-top: 0; }
+  .step { grid-template-columns: 1.75rem auto; white-space: nowrap; }
+  .step .tag { display: none; }
+  .step-extra { margin-top: 0; }
+  .panel { overflow: visible; }
+  .viewport { height: 60vh; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

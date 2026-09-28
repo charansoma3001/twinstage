@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { ARM } from "./config.js";
 import { loadURDF } from "./urdf.js";
-import { mountSO101, setJoints, jointValues as so101JointValues } from "./so101.js";
+import { mountSO101, paintSO101, setJoints, jointValues as so101JointValues } from "./so101.js";
 
 /* =========================================================================
    SO-101 model: loads the URDF, orients it into the scene frame, and resolves
@@ -14,6 +14,7 @@ export const toolPoint = new THREE.Object3D();
 
 export async function loadRobot(scene) {
   robot = await loadURDF(ARM.urdfUrl);
+  paintSO101(robot, 0xfe5e0e);
   scene.add(mountSO101(robot, toolPoint).holder);
   return robot;
 }

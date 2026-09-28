@@ -1,38 +1,32 @@
 import { WIZARD_STEPS, DEFAULT_TABLE_CORNERS, DEFAULT_HOVER_CORNERS } from "./config.js";
 import { state } from "./state.js";
 import { saveCalibration, loadCalibration, clearCalibration } from "./persist.js";
+import { setStepStatus } from "./settingsSteps.js";
 
 /* =========================================================================
    CALIBRATION WIZARD & BUTTON EVENT BINDINGS
    ========================================================================= */
 const el = (id) => document.getElementById(id);
 
+// Plain names for the corners, as someone standing at the table sees them.
+const CORNER_NAME = { tl: "far left", tr: "far right", br: "near right", bl: "near left" };
+
 export function updateWizardUI() {
   const calibration = state.calibration;
   const step = WIZARD_STEPS[calibration.wizardStep];
   const isTable = calibration.activeTab === "table";
 
-  el("calib-guide-title").textContent = isTable ? "Calibrate Table Surface (Min)" : "Calibrate Hover Ceiling (Max)";
-  el("calib-guide-step").textContent = `Point ${calibration.wizardStep + 1} of 4: ${step.name}`;
-  el("calib-guide-desc").innerHTML = isTable
-    ? `Place hand <strong>flat on table</strong> at <strong>${step.name}</strong> and tap Capture.`
-    : `Hover hand at <strong>max high ceiling</strong> at <strong>${step.name}</strong> and tap Capture.`;
+  el("calib-guide-title").textContent = isTable ? "Table surface" : "Hover height";
+  el("calib-guide-step").textContent = `Corner ${calibration.wizardStep + 1} of 4`;
+  el("calib-guide-desc").textContent = isTable
+    ? `Lay your hand flat on the table at the ${CORNER_NAME[step.id]} corner, then capture.`
+    : `Hold your hand at the highest it should reach, over the ${CORNER_NAME[step.id]} corner, then capture.`;
 
-  // Update corner button styles
   ["tl", "tr", "br", "bl"].forEach((cid, i) => {
-    const btn = el(`btn-corner-${cid}`);
-    const dot = el(`dot-${cid}`);
     const target = isTable ? calibration.tableCorners[cid] : calibration.hoverCorners[cid];
-
-    el(`status-${cid}`).textContent = `U: ${target.u.toFixed(2)}, V: ${target.v.toFixed(2)}`;
-
-    if (i === calibration.wizardStep) {
-      btn.className = "p-2 rounded bg-amber-950/60 border border-amber-500 text-left transition flex justify-between items-center";
-      dot.className = "w-2 h-2 rounded-full bg-amber-400 animate-pulse";
-    } else {
-      btn.className = "p-2 rounded bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition flex justify-between items-center";
-      dot.className = isTable ? "w-2 h-2 rounded-full bg-emerald-400" : "w-2 h-2 rounded-full bg-cyan-400";
-    }
+    el(`status-${cid}`).textContent = `u ${target.u.toFixed(2)}, v ${target.v.toFixed(2)}`;
+    el(`btn-corner-${cid}`).toggleAttribute("data-next", i === calibration.wizardStep);
+    el(`dot-${cid}`).dataset.tone = i === calibration.wizardStep ? "warn" : "ok";
   });
 }
 
@@ -59,7 +53,9 @@ function noteSaved(text) {
 }
 
 function persist() {
-  noteSaved(saveCalibration() ? "Saved" : "Save unavailable");
+  const ok = saveCalibration();
+  noteSaved(ok ? "Saved" : "Could not save");
+  if (ok) setStepStatus("table", "Saved");
 }
 
 export function initCalibration() {
@@ -70,19 +66,14 @@ export function initCalibration() {
   const calibTabTable = el("calib-tab-table");
   const calibTabHover = el("calib-tab-hover");
 
-  calibTabTable.addEventListener("click", () => {
-    state.calibration.activeTab = "table";
-    calibTabTable.className = "flex-1 py-1.5 rounded-md bg-emerald-900/80 border border-emerald-700 text-emerald-300 flex items-center justify-center gap-1";
-    calibTabHover.className = "flex-1 py-1.5 rounded-md text-slate-400 hover:text-slate-200 flex items-center justify-center gap-1";
+  const selectTab = (tab) => {
+    state.calibration.activeTab = tab;
+    calibTabTable.classList.toggle("is-on", tab === "table");
+    calibTabHover.classList.toggle("is-on", tab === "hover");
     updateWizardUI();
-  });
-
-  calibTabHover.addEventListener("click", () => {
-    state.calibration.activeTab = "hover";
-    calibTabHover.className = "flex-1 py-1.5 rounded-md bg-cyan-900/80 border border-cyan-700 text-cyan-300 flex items-center justify-center gap-1";
-    calibTabTable.className = "flex-1 py-1.5 rounded-md text-slate-400 hover:text-slate-200 flex items-center justify-center gap-1";
-    updateWizardUI();
-  });
+  };
+  calibTabTable.addEventListener("click", () => selectTab("table"));
+  calibTabHover.addEventListener("click", () => selectTab("hover"));
 
   // Capture Active Corner (advances the wizard)
   el("btn-capture-active-corner").addEventListener("click", () => {
@@ -112,6 +103,7 @@ export function initCalibration() {
     // quietly bring the old corners back.
     clearCalibration();
     noteSaved("Reset");
+    setStepStatus("table", "Default corners", "warn");
   });
 
   // Inversions and Mirror
@@ -122,18 +114,10 @@ export function initCalibration() {
   // Paint the three toggles from state rather than trusting the markup, so
   // the defaults in state.js are the single source of truth for them.
   const paintToggles = () => {
-    el("label-mirror-status").textContent = state.isVideoMirrored ? "ON" : "OFF";
+    btnMirror.setAttribute("aria-pressed", String(state.isVideoMirrored));
     videoElement.classList.toggle("-scale-x-100", state.isVideoMirrored);
-
-    el("label-inv-x").textContent = state.isInvertX ? "ON" : "OFF";
-    btnInvX.className = state.isInvertX
-      ? "py-1 px-2 rounded bg-blue-900/60 border border-blue-600 text-blue-200 flex items-center justify-center gap-1 transition"
-      : "py-1 px-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center gap-1 transition";
-
-    el("label-inv-z").textContent = state.isInvertZ ? "ON" : "OFF";
-    btnInvZ.className = state.isInvertZ
-      ? "py-1 px-2 rounded bg-purple-900/60 border border-purple-600 text-purple-200 flex items-center justify-center gap-1 transition"
-      : "py-1 px-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center gap-1 transition";
+    btnInvX.setAttribute("aria-pressed", String(state.isInvertX));
+    btnInvZ.setAttribute("aria-pressed", String(state.isInvertZ));
   };
 
   btnMirror.addEventListener("click", () => {
@@ -158,4 +142,5 @@ export function initCalibration() {
 
   updateWizardUI();
   if (restored) noteSaved("Restored");
+  setStepStatus("table", restored ? "Saved" : "Default corners", restored ? "off" : "warn");
 }

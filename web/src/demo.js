@@ -8,7 +8,7 @@ import {
   syncHeightGaugeLinear,
   updateFromSliders,
   sliderX, sliderY, sliderZ, sliderPitch, sliderRoll,
-  trackingTxt
+  setTracking
 } from "./ui.js";
 
 /* =========================================================================
@@ -43,13 +43,13 @@ function startRoutine(routine, label) {
   setMode("demo");
   state.activeDemoRoutine = routine;
   state.demoTime = 0;
-  trackingTxt.textContent = label;
+  setTracking(label, "dry");
 }
 
 export function initDemos() {
-  document.getElementById("btn-demo-pick").addEventListener("click", () => startRoutine("pickAndPlace", "Pick & Place Routine"));
-  document.getElementById("btn-demo-pinch").addEventListener("click", () => startRoutine("pinchTest", "Precision Pinch Routine"));
-  document.getElementById("btn-demo-wave").addEventListener("click", () => startRoutine("waveScan", "Waveform Scan Routine"));
+  document.getElementById("btn-demo-pick").addEventListener("click", () => startRoutine("pickAndPlace", "Pick & place"));
+  document.getElementById("btn-demo-pinch").addEventListener("click", () => startRoutine("pinchTest", "Precision pinch"));
+  document.getElementById("btn-demo-wave").addEventListener("click", () => startRoutine("waveScan", "Waveform scan"));
 
   document.getElementById("btn-demo-rest").addEventListener("click", () => {
     setMode("interactive");
@@ -60,7 +60,7 @@ export function initDemos() {
     sliderRoll.value = "0";
     sliderGripper.value = "0";
     updateFromSliders();
-    trackingTxt.textContent = "Rest Pose Set";
+    setTracking("Rest");
   });
 
   document.getElementById("btn-spawn-cube").addEventListener("click", () => {

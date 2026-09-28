@@ -1,10 +1,11 @@
+import "../ui/theme.css";
 import "./stage.css";
-import * as THREE from "three";
 import { CONFIG, PRESENTER } from "../config.js";
 import { loadCalibration } from "../persist.js";
 import { loadPrefs, savePrefs, onPrefsChange, openCamera } from "../prefs.js";
 import { createBridgeLink } from "../bridge.js";
 import { armToUrdf } from "../jointMap.js";
+import { createRenderer } from "../ui/sceneLook.js";
 import { keepOut, inwardLimit as keepOutLimit } from "./keepout.js";
 import * as twin from "./twin.js";
 import { hands, fresh, startHands, restartHands, setHandPrefs, setDetecting } from "./hands.js";
@@ -54,8 +55,7 @@ const S = {
 
 /* ---------------------------------------------------------------------- */
 const container = el("stage-canvas");
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-renderer.setClearColor(0x000000, 0);
+const renderer = createRenderer(container);
 // The twin and hand tracking share the GPU: drawn at the display's 1.8x the
 // twin halved tracking speed (100 ms/frame against 53 at 1x, measured), so it
 // drops to 1x while hands are tracked and is sharp again otherwise.
@@ -68,9 +68,6 @@ function setTrackingRender(tracking) {
     resize();
   }
 }
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-container.appendChild(renderer.domElement);
 
 function resize() {
   renderer.setSize(container.clientWidth, container.clientHeight);

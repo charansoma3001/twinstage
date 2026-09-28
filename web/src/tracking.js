@@ -1,7 +1,7 @@
 import { HAND_CONNECTIONS } from "./config.js";
 import { state } from "./state.js";
 import { processOverheadLandmarks } from "./retarget.js";
-import { sliderPitch, sliderRoll, syncSlidersAndLabels, setMode } from "./ui.js";
+import { sliderPitch, sliderRoll, syncSlidersAndLabels, setMode, setTracking } from "./ui.js";
 import { loadPrefs, openCamera } from "./prefs.js";
 import { createHandTracker } from "./handTracker.js";
 
@@ -22,18 +22,23 @@ function showCameraError(err) {
   const detail = (err && err.message) || String(err);
   const denied = /denied|dismissed|NotAllowed/i.test(detail);
   box.innerHTML = `
-    <div class="w-12 h-12 rounded-full bg-rose-950/80 border border-rose-800 text-rose-400 mx-auto flex items-center justify-center mb-2">!</div>
-    <p class="text-xs text-rose-300 font-medium">${denied ? "Camera access blocked" : "Camera failed to start"}</p>
-    <p class="text-[11px] text-slate-400 mt-1 break-words">${detail}</p>
-    <p class="text-[11px] text-slate-500 mt-1">${denied
-      ? "Allow camera for this site in the address-bar icon, then click Live Camera again."
-      : "The hand model failed to load; reload the page and click Live Camera again."}</p>`;
+    <p class="font-medium">${denied ? "Camera access is blocked" : "The camera did not start"}</p>
+    <p class="note mt-1" data-tone="bad">${detail}</p>
+    <p class="note mt-1">${denied
+      ? "Allow the camera for this site from the address bar, then start it again."
+      : "The hand model failed to load. Reload the page and start the camera again."}</p>`;
   box.classList.remove("hidden");
 }
 
 function clearCameraError() {
   const box = document.getElementById("synthetic-placeholder");
   if (box.dataset.original) box.innerHTML = box.dataset.original;
+  bindStart();
+}
+
+/* The placeholder's own Start button; rebound whenever its markup is restored. */
+function bindStart() {
+  document.getElementById("btn-start-camera")?.addEventListener("click", () => setMode("webcam"));
 }
 
 const videoElement = document.getElementById("webcam-video");
@@ -71,22 +76,20 @@ export function onHandResults(results) {
     // Update Gauges
     document.getElementById("gauge-height-bar").style.width = `${retargeted.heightGaugePct}%`;
     document.getElementById("gauge-height-pct").textContent = `${retargeted.heightGaugePct}%`;
-    document.getElementById("label-live-palm").textContent = `Live Palm: ${(state.currentLiveRigidPalm * 100).toFixed(1)}px`;
+    document.getElementById("label-live-palm").textContent = (state.currentLiveRigidPalm * 100).toFixed(1);
 
     // The bar is the commanded aperture; the label carries the raw thumb angle
     // behind it, which is what you tune the mapping against.
     const pinchPct = Math.round(retargeted.pinch * 100);
     document.getElementById("metric-pinch-bar").style.width = `${pinchPct}%`;
     document.getElementById("metric-pinch-val").textContent =
-      `${retargeted.pinch.toFixed(2)} @ ${Math.round(retargeted.thumbSpread)}°`;
+      `${retargeted.pinch.toFixed(2)} at ${Math.round(retargeted.thumbSpread)}°`;
     document.getElementById("val-pitch").textContent = `${sliderPitch.value}°`;
     document.getElementById("val-roll").textContent = `${sliderRoll.value}°`;
 
-    document.getElementById("tracking-indicator").className = "w-2 h-2 rounded-full bg-emerald-400";
-    document.getElementById("tracking-status").textContent = "4-Corner Spatial Mapping OK";
+    setTracking("Camera: tracking a hand", "ok");
   } else {
-    document.getElementById("tracking-indicator").className = "w-2 h-2 rounded-full bg-amber-400 animate-pulse";
-    document.getElementById("tracking-status").textContent = "Place Hand in Camera View";
+    setTracking("Camera: looking for a hand", "warn");
   }
   canvasCtx.restore();
 }
@@ -96,7 +99,7 @@ export function drawCalibrationOverlays(ctx, w, h) {
   const hc = state.calibration.hoverCorners;
 
   // 1. Draw Hover Quad (Cyan dashed)
-  ctx.strokeStyle = "rgba(6, 182, 212, 0.4)";
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
   ctx.lineWidth = 1.5;
   ctx.setLineDash([4, 4]);
   ctx.beginPath();
@@ -108,8 +111,8 @@ export function drawCalibrationOverlays(ctx, w, h) {
   ctx.stroke();
 
   // 2. Draw Table Quad & Interior Grid Mesh (Emerald solid)
-  ctx.strokeStyle = "rgba(16, 185, 129, 0.85)";
-  ctx.fillStyle = "rgba(16, 185, 129, 0.05)";
+  ctx.strokeStyle = "rgba(254, 94, 14, 0.9)";
+  ctx.fillStyle = "rgba(254, 94, 14, 0.06)";
   ctx.lineWidth = 2;
   ctx.setLineDash([]);
   ctx.beginPath();
@@ -122,7 +125,7 @@ export function drawCalibrationOverlays(ctx, w, h) {
   ctx.stroke();
 
   // Interior 3x3 Table Grid
-  ctx.strokeStyle = "rgba(16, 185, 129, 0.25)";
+  ctx.strokeStyle = "rgba(254, 94, 14, 0.3)";
   ctx.lineWidth = 1;
   for (let i = 1; i <= 2; i++) {
     const f = i / 3.0;
@@ -159,13 +162,13 @@ export function drawCalibrationOverlays(ctx, w, h) {
     const isCurrentStep = state.calibration.wizardStep === idx;
     ctx.beginPath();
     ctx.arc(c.pt.u * w, c.pt.v * h, isCurrentStep ? 8 : 5, 0, 2 * Math.PI);
-    ctx.fillStyle = isCurrentStep ? "#f59e0b" : "#10b981";
+    ctx.fillStyle = isCurrentStep ? "#febe42" : "#fe5e0e";
     ctx.fill();
-    ctx.strokeStyle = "#0f172a";
+    ctx.strokeStyle = "#000b1a";
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    ctx.fillStyle = isCurrentStep ? "#fbbf24" : "rgba(255, 255, 255, 0.85)";
+    ctx.fillStyle = isCurrentStep ? "#febe42" : "rgba(255, 255, 255, 0.9)";
     ctx.font = isCurrentStep ? "bold 10px monospace" : "9px monospace";
     ctx.fillText(c.name, c.pt.u * w + 8, c.pt.v * h - 4);
   });
@@ -173,7 +176,7 @@ export function drawCalibrationOverlays(ctx, w, h) {
 
 export function drawHandSkeleton(ctx, landmarks, w, h) {
   ctx.lineWidth = 2.5;
-  ctx.strokeStyle = "rgba(6, 182, 212, 0.85)";
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
 
   for (const [s, e] of HAND_CONNECTIONS) {
     let p1x = landmarks[s].x * w;
@@ -193,9 +196,9 @@ export function drawHandSkeleton(ctx, landmarks, w, h) {
     if (state.isVideoMirrored) px = (1.0 - landmarks[i].x) * w;
     ctx.beginPath();
     ctx.arc(px, landmarks[i].y * h, i === 4 || i === 8 ? 5.5 : 3, 0, 2 * Math.PI);
-    ctx.fillStyle = i === 4 || i === 8 ? "#f59e0b" : "#38bdf8";
+    ctx.fillStyle = i === 4 || i === 8 ? "#febe42" : "#fe5e0e";
     ctx.fill();
-    ctx.strokeStyle = "#0f172a";
+    ctx.strokeStyle = "#000b1a";
     ctx.stroke();
   }
 }
@@ -244,6 +247,7 @@ export function stopWebcam() {
 export function initTracking() {
   const box = document.getElementById("synthetic-placeholder");
   box.dataset.original = box.innerHTML;
+  bindStart();
   resizeCanvas();
   ensureTracker().ready.catch((err) => console.warn("Hand model failed to load:", err));
 }

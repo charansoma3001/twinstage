@@ -3,7 +3,8 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { ARM } from "../config.js";
 import { loadURDF } from "../urdf.js";
 import { REST_JOINTS } from "../primitives.js";
-import { mountSO101, setJoints, jointValues as so101JointValues } from "../so101.js";
+import { mountSO101, paintSO101, setJoints, jointValues as so101JointValues } from "../so101.js";
+import { addLights, addFloor } from "../ui/sceneLook.js";
 
 /* =========================================================================
    Two SO-101 arms, side by side, as the operator sees them.
@@ -22,37 +23,8 @@ let camera = null;
 let controls = null;
 const arms = {};           // name -> { holder, robot, target }
 
-function lights() {
-  scene.add(new THREE.HemisphereLight(0xffffff, 0xe9e1d4, 0.9));
-  const key = new THREE.DirectionalLight(0xffffff, 1.1);
-  key.position.set(-0.6, 1.4, -0.8);
-  key.castShadow = true;
-  key.shadow.mapSize.set(2048, 2048);
-  key.shadow.camera.left = key.shadow.camera.bottom = -0.8;
-  key.shadow.camera.right = key.shadow.camera.top = 0.8;
-  key.shadow.radius = 6;
-  scene.add(key);
-  const warm = new THREE.DirectionalLight(0xffd2a8, 0.45);
-  warm.position.set(0.8, 0.6, 0.9);
-  scene.add(warm);
-}
-
 function floor() {
-  // Only the shadow is drawn; the page's gradient is the floor.
-  const shadowCatcher = new THREE.Mesh(
-    new THREE.PlaneGeometry(6, 6),
-    new THREE.ShadowMaterial({ opacity: 0.14 })
-  );
-  shadowCatcher.rotation.x = -Math.PI / 2;
-  shadowCatcher.receiveShadow = true;
-  scene.add(shadowCatcher);
-
-  const grid = new THREE.GridHelper(2.4, 48, 0xd9cfc0, 0xe7dfd3);
-  grid.position.y = 0.0005;
-  grid.material.transparent = true;
-  grid.material.opacity = 0.55;
-  scene.add(grid);
-
+  addFloor(scene);
   // Each arm's reachable table patch, tinted in its colour.
   for (const name of ["leader", "follower"]) {
     const pad = new THREE.Mesh(
@@ -66,27 +38,11 @@ function floor() {
   }
 }
 
-function tint(robot, colour) {
-  const body = new THREE.Color(colour);
-  const dark = new THREE.Color(0x1f2430);
-  robot.root.traverse((o) => {
-    if (!o.isMesh) return;
-    const file = o.userData.file || "";
-    const servo = /sts3215/i.test(file);
-    o.material = new THREE.MeshStandardMaterial({
-      color: servo ? dark : body,
-      roughness: servo ? 0.5 : 0.42,
-      metalness: 0.05
-    });
-    o.castShadow = true;
-  });
-}
-
 async function loadArm(name) {
   const robot = await loadURDF(ARM.urdfUrl);
   const holder = new THREE.Group();
   holder.add(mountSO101(robot).holder);
-  tint(robot, COLOURS[name]);
+  paintSO101(robot, COLOURS[name]);
 
   const target = new THREE.Mesh(
     new THREE.SphereGeometry(0.009, 20, 20),
@@ -203,7 +159,7 @@ export async function initTwin(renderer, container, leaderSide, spacing) {
   controls.minDistance = 0.35;
   controls.maxDistance = 2.2;
   resetView();
-  lights();
+  addLights(scene);
   floor();
   await Promise.all([loadArm("leader"), loadArm("follower")]);
   setLayout(leaderSide, spacing);

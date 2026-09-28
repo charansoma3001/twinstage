@@ -40,3 +40,20 @@ export function setJoints(robot, q) {
 export function jointValues(robot) {
   return JOINTS.map((j) => robot.joints[j].value);
 }
+
+/* Body in `colour`, servos dark: how every twin is drawn. */
+export function paintSO101(robot, colour) {
+  const body = new THREE.Color(colour);
+  const dark = new THREE.Color(0x1f2430);
+  robot.root.traverse((o) => {
+    if (!o.isMesh) return;
+    const file = o.userData.file || "";
+    const servo = /sts3215/i.test(file);
+    o.material = new THREE.MeshStandardMaterial({
+      color: servo ? dark : body,
+      roughness: servo ? 0.5 : 0.42,
+      metalness: 0.05
+    });
+    o.castShadow = true;
+  });
+}

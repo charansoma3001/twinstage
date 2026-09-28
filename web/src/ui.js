@@ -14,12 +14,15 @@ export const sliderGripper = document.getElementById("slider-gripper");
 
 const el = (id) => document.getElementById(id);
 
-const btnModeInteractive = el("mode-interactive");
-const btnModeWebcam = el("mode-webcam");
-const btnModeDemo = el("mode-demo");
-export const trackingInd = el("tracking-indicator");
-export const trackingTxt = el("tracking-status");
+const MODE_BUTTONS = { interactive: el("mode-interactive"), webcam: el("mode-webcam"), demo: el("mode-demo") };
 const syntheticPlaceholder = el("synthetic-placeholder");
+
+/* The sandbox's status tag: what is driving the twin right now. */
+export function setTracking(text, tone = "off") {
+  const tag = el("tracking-status");
+  tag.textContent = text;
+  tag.dataset.tone = tone;
+}
 
 /* Mirrors the current targetCartesian onto the sliders + numeric labels.
    Shared by slider input, webcam retargeting and demo routines. */
@@ -77,28 +80,20 @@ export async function setMode(mode) {
   const videoElement = el("webcam-video");
   state.currentMode = mode;
   state.activeDemoRoutine = null;
-  [btnModeInteractive, btnModeWebcam, btnModeDemo].forEach(b => {
-    b.className = "px-3 py-1.5 rounded-md font-medium text-slate-300 hover:text-white transition-all flex items-center gap-1.5";
-  });
+  for (const [m, b] of Object.entries(MODE_BUTTONS)) b.classList.toggle("is-on", m === mode);
 
   if (mode === "interactive") {
-    btnModeInteractive.className = "px-3 py-1.5 rounded-md font-medium bg-cyan-600 text-white shadow transition-all flex items-center gap-1.5";
-    trackingInd.className = "w-2 h-2 rounded-full bg-amber-400 animate-pulse";
-    trackingTxt.textContent = "Interactive Mode";
+    setTracking("Sliders");
     videoElement.classList.add("hidden");
     syntheticPlaceholder.classList.remove("hidden");
   } else if (mode === "webcam") {
-    btnModeWebcam.className = "px-3 py-1.5 rounded-md font-medium bg-cyan-600 text-white shadow transition-all flex items-center gap-1.5";
-    trackingInd.className = "w-2 h-2 rounded-full bg-emerald-400";
-    trackingTxt.textContent = "4-Corner Spatial Mapping Active";
+    setTracking("Camera: looking for a hand", "warn");
     syntheticPlaceholder.classList.add("hidden");
     videoElement.classList.remove("hidden");
-    if (state.isVideoMirrored) videoElement.classList.add("-scale-x-100");
+    videoElement.classList.toggle("-scale-x-100", state.isVideoMirrored);
     await startWebcam();
   } else if (mode === "demo") {
-    btnModeDemo.className = "px-3 py-1.5 rounded-md font-medium bg-cyan-600 text-white shadow transition-all flex items-center gap-1.5";
-    trackingInd.className = "w-2 h-2 rounded-full bg-cyan-400 animate-pulse";
-    trackingTxt.textContent = "Autonomous Routine";
+    setTracking("Demo loop", "dry");
     videoElement.classList.add("hidden");
     syntheticPlaceholder.classList.remove("hidden");
     state.activeDemoRoutine = "pickAndPlace";
@@ -116,32 +111,27 @@ export function centerTarget() {
 /* =========================================================================
    TELEMETRY & SERVO STATS
    ========================================================================= */
+/* One row per joint in the stage's style: a marker along the joint's range. */
+const JOINT_LABEL = ["Pan", "Lift", "Elbow", "W-Flex", "W-Roll", "Grip"];
+
 export function buildServoCards() {
-  const servosContainer = el("servos-container");
-  CONFIG.limits.forEach((limit, idx) => {
-    const card = document.createElement("div");
-    card.className = "bg-slate-950 p-2 rounded border border-slate-800 space-y-1";
-    card.innerHTML = `
-      <div class="flex justify-between items-center text-slate-300">
-        <span class="font-bold">${limit.name}</span>
-        <span id="servo-raw-${idx}" class="text-cyan-400">0.00°</span>
-      </div>
-      <div class="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
-        <div id="servo-bar-${idx}" class="h-full bg-cyan-500" style="width: 50%;"></div>
-      </div>`;
-    servosContainer.appendChild(card);
-  });
+  const box = el("servos-container");
+  box.innerHTML = JOINT_LABEL.map((name, idx) => `
+    <div class="joint-row" style="color: var(--ember)">
+      <span>${name}</span>
+      <span class="bar"><i id="servo-bar-${idx}" style="left: 50%"></i></span>
+      <b id="servo-raw-${idx}">0°</b>
+    </div>`).join("");
 }
 
 export function updateTelemetry(joints) {
   joints.forEach((rad, idx) => {
     const limit = CONFIG.limits[idx];
-    const deg = (rad * 180 / Math.PI).toFixed(1);
     const norm = (rad - limit.min) / (limit.max - limit.min);
     const raw = el(`servo-raw-${idx}`);
     const bar = el(`servo-bar-${idx}`);
-    if (raw) raw.textContent = `${deg}°`;
-    if (bar) bar.style.width = `${Math.max(0, Math.min(100, norm * 100))}%`;
+    if (raw) raw.textContent = idx === 5 ? `${Math.round((rad / limit.max) * 100)}%` : `${Math.round(rad * 180 / Math.PI)}°`;
+    if (bar) bar.style.left = `${Math.max(0, Math.min(100, norm * 100))}%`;
   });
 }
 
@@ -152,29 +142,7 @@ export function initUI() {
 
   el("btn-center-target").addEventListener("click", centerTarget);
 
-  btnModeInteractive.addEventListener("click", () => setMode("interactive"));
-  btnModeWebcam.addEventListener("click", () => setMode("webcam"));
-  btnModeDemo.addEventListener("click", () => setMode("demo"));
-
-  // Right drawer tabs
-  const tabBtnControls = el("tab-btn-controls");
-  const tabBtnTelemetry = el("tab-btn-telemetry");
-  const tabContentControls = el("tab-content-controls");
-  const tabContentTelemetry = el("tab-content-telemetry");
-
-  tabBtnControls.addEventListener("click", () => {
-    tabBtnControls.className = "flex-1 py-2.5 border-b-2 border-cyan-500 text-cyan-400 bg-slate-800/40 flex justify-center gap-1.5";
-    tabBtnTelemetry.className = "flex-1 py-2.5 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex justify-center gap-1.5";
-    tabContentControls.classList.remove("hidden");
-    tabContentTelemetry.classList.add("hidden");
-  });
-
-  tabBtnTelemetry.addEventListener("click", () => {
-    tabBtnTelemetry.className = "flex-1 py-2.5 border-b-2 border-cyan-500 text-cyan-400 bg-slate-800/40 flex justify-center gap-1.5";
-    tabBtnControls.className = "flex-1 py-2.5 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex justify-center gap-1.5";
-    tabContentTelemetry.classList.remove("hidden");
-    tabContentControls.classList.add("hidden");
-  });
+  for (const [m, b] of Object.entries(MODE_BUTTONS)) b.addEventListener("click", () => setMode(m));
 
   buildServoCards();
 }

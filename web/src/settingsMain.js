@@ -1,18 +1,5 @@
-import "./style.css";
-import {
-  createIcons, Activity, ArrowDownToDot, Bot, Box, Camera, CheckCircle, Compass,
-  Crosshair, FlipHorizontal, Grid, Hand, Home, MousePointer, Move3d,
-  MoveHorizontal, MoveVertical, OctagonX, Play, RotateCcw, Scissors,
-  Sliders, Target, Video
-} from "lucide";
-
-// Only the icons actually referenced by data-lucide attributes in index.html.
-const icons = {
-  Activity, ArrowDownToDot, Bot, Box, Camera, CheckCircle, Compass, Crosshair,
-  FlipHorizontal, Grid, Hand, Home, MousePointer, Move3d, MoveHorizontal,
-  MoveVertical, OctagonX, Play, RotateCcw, Scissors, Sliders, Target, Video
-};
-
+import "./ui/theme.css";
+import "./settings.css";
 import { state } from "./state.js";
 import { solveSO101IK } from "./kinematics.js";
 import { controls, renderer, scene, camera, applyToolState, resizeViewport, resetView } from "./scene.js";
@@ -24,6 +11,7 @@ import { resizeCanvas, initTracking } from "./tracking.js";
 import { initRobotLink, streamJoints } from "./robotLink.js";
 import { initArmTwin, applyMirrorPose, twin } from "./armTwin.js";
 import { initStageSetup } from "./stageSetup.js";
+import { initSteps, onStepChange } from "./settingsSteps.js";
 
 /* =========================================================================
    MAIN SIMULATION & ANIMATION LOOP
@@ -82,8 +70,7 @@ function animate() {
 }
 
 async function boot() {
-  createIcons({ icons });
-
+  initSteps();
   await loadRobot(scene);
 
   initUI();
@@ -99,10 +86,11 @@ async function boot() {
   });
 
   initTracking();
-  window.addEventListener("resize", () => {
-    resizeCanvas();
-    resizeViewport();
-  });
+  // The twin's card changes size with the window and the layout; the camera
+  // canvas only has a size while its step is open.
+  new ResizeObserver(resizeViewport).observe(document.getElementById("canvas-container"));
+  window.addEventListener("resize", resizeCanvas);
+  onStepChange((step) => { if (step === "table") requestAnimationFrame(resizeCanvas); });
 
   updateFromSliders();
   animate();
@@ -110,6 +98,12 @@ async function boot() {
 
 boot().catch((err) => {
   console.error("Startup failed:", err);
-  const box = document.getElementById("synthetic-placeholder");
-  if (box) box.innerHTML = `<p class="text-xs text-rose-300 font-medium">Failed to start</p><p class="text-[11px] text-slate-400 mt-1 break-words">${err.message}</p>`;
+  const panel = document.querySelector(".panel");
+  if (panel) {
+    const note = document.createElement("p");
+    note.className = "note mt-4";
+    note.dataset.tone = "bad";
+    note.textContent = `Settings did not start: ${err.message}. Check the browser console, then reload.`;
+    panel.prepend(note);
+  }
 });
