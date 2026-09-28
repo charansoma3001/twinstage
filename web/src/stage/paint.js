@@ -6,7 +6,7 @@ import { S, ARMS, el, primRuns, approach, TAU_UI } from "./state.js";
 import { setTrackingRender } from "./view.js";
 
 /* =========================================================================
-   Everything the stage draws in the DOM: the mode title and explainer, the
+   Everything the stage draws in the DOM: the mode title, the
    arm and hand cards, the grip gauges, toasts and the presenter card. The
    twin itself is drawn by twin.js.
    ========================================================================= */
@@ -100,20 +100,6 @@ const TITLES = {
   hands: ["Hand Control", ""],
   primitive: ["Task Primitives", ""],
   manual: ["Settings open", ""]
-};
-const EXPLAIN = {
-  idle: ["Two arms, two ways to drive them.",
-    "Teleop: move the leader arm by hand and the follower copies it. Hands: both arms follow your hands under the camera, no contact needed."],
-  teleop: ["Move the leader, the follower copies it.",
-    "The leader arm's motors are switched off. Its joints are read fifty times a second and sent to the follower, which moves to match, limited to a safe speed."],
-  hands: ["Your hands, read by a camera, drive both arms.",
-    "A camera above the table finds both hands. Where each palm is sets where its arm reaches, how high it is sets the height, and opening your thumb opens the gripper. Each arm is solved with inverse kinematics many times a second."],
-  primitive: ["Short, repeatable tasks, run by the arms themselves.",
-    "Each primitive is a path for the gripper through space and time: reach, grip, carry, release. Inverse kinematics turns every point of it into joint angles. With both arms, the one on the left runs the mirror image."],
-  manual: ["The arms are being set up.",
-    "The settings page has control of the arms. Close it, or press Teleop or Hands, to take it back."],
-  base: ["Drive the base from the keyboard or your phone.",
-    "Three omniwheels set 120 degrees apart let it move in any direction and turn on the spot. The model follows the wheels' own speed readings, on an endless floor."]
 };
 
 function armTone(a) {
@@ -238,9 +224,6 @@ export function paintMode() {
   el("slot-hands").classList.toggle("is-away", handsAway);
   setDetecting(!handsAway);
   setTrackingRender(!handsAway);
-  const [t, b] = S.view === "base" ? EXPLAIN.base : EXPLAIN[S.mode] || EXPLAIN.idle;
-  fadeText(el("explain-title"), t);
-  fadeText(el("explain-body"), b);
 }
 
 /* ---------------------------------------------------------------------- */

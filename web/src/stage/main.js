@@ -180,5 +180,6 @@ async function boot() {
 boot().catch((err) => {
   console.error("Stage failed to start:", err);
   el("stage-title").textContent = "Failed to start";
-  el("explain-body").textContent = err.message;
+  el("mode-note-tag").textContent = err.message;
+  el("mode-note-tag").classList.remove("hidden");
 });

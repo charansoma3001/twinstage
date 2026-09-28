@@ -54,7 +54,7 @@
 
   <main class="flex flex-col gap-4 px-4 pb-6 lg:flex-1 lg:min-h-0 lg:grid lg:grid-cols-[27rem_1fr] lg:gap-6 lg:px-8">
 
-    <!-- LEFT: cameras + explainer, big-screen only: a phone never opens a camera -->
+    <!-- LEFT: cameras, big-screen only; a phone never opens a camera -->
     <aside class="hidden lg:flex min-h-0 flex-col">
       <div class="slot" id="slot-hands"><div class="slot-inner"><div class="card p-4">
         <div class="flex items-center justify-between px-1">
@@ -85,12 +85,6 @@
           <div id="follower-error" class="hidden absolute inset-0 flex items-center justify-center text-center p-6 text-sm text-ink-60"></div>
         </div>
       </div></div></div>
-
-      <div class="card p-5 flex-1 min-h-0">
-        <div class="eyebrow">What you're seeing</div>
-        <div class="text-2xl font-light mt-2 leading-snug" id="explain-title">Move the leader, the follower copies it.</div>
-        <p class="text-[0.9375rem] text-ink-60 mt-3 leading-relaxed" id="explain-body">The leader arm has its motors switched off. Its joints are read fifty times a second and sent to the follower, which moves to match.</p>
-      </div>
     </aside>
 
     <!-- CENTRE: twin + overlays -->

@@ -38,7 +38,7 @@
 
 .ticks.ticks-dark span { background: rgba(0, 11, 26, calc(0.18 + 0.82 * var(--on))); }
 
-#stage-title, #explain-title, #explain-body {
+#stage-title {
   transition: opacity 0.18s ease, transform 0.18s ease;
 }
 .is-fading {
