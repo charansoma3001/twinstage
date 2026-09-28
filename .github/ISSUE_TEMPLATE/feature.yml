@@ -1,0 +1,14 @@
+name: Idea or new robot
+description: A feature, a mode, or support for another robot
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What you would like
+      description: What it would let you do. For a new robot, name it and link its URDF and LeRobot support.
+    validations:
+      required: true
+  - type: textarea
+    id: how
+    attributes:
+      label: How it might work

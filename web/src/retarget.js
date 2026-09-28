@@ -62,10 +62,11 @@ export function processOverheadLandmarks(landmarks) {
 /* One hand -> one arm's Cartesian target.
 
    `region` is the slice of the calibrated table, left to right in the user's
-   frame, that this arm's hand works in. The two-handed stage gives each arm
-   half ([0, 0.5] or [0.5, 1]) and stretches that half over the arm's whole
-   workspace. Height still reads the corner scales at the hand's true position
-   in the full quad, because that is where the camera actually sees it. */
+   frame, that this hand works in, stretched over the arm's whole workspace.
+   Every caller today uses the whole table: the arms stand far enough apart
+   that half the table each only halved each hand's travel. Height reads the
+   corner scales at the hand's true position in the full quad, because that
+   is where the camera actually sees it. */
 export function retargetHand(landmarks, region = { s0: 0, s1: 1 }) {
   const wrist = landmarks[0];
   const thumbTip = landmarks[4];

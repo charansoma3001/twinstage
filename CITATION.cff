@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use Twinstage in your research, please cite it as below."
+title: "Twinstage: live digital twins for LeRobot arms and bases"
+type: software
+authors:
+  - family-names: "Soma"
+    given-names: "Charan Sai"
+repository-code: "https://github.com/charansoma3001/twinstage"
+license: Apache-2.0
+version: 0.1.0
+keywords:
+  - robotics
+  - digital twin
+  - teleoperation
+  - hand tracking
+  - LeRobot
+  - SO-101

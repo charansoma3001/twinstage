@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Show what you built
+    url: https://github.com/charansoma3001/twinstage/discussions/categories/show-and-tell
+    about: Share a project, a demo or a video.
+  - name: Ask a question
+    url: https://github.com/charansoma3001/twinstage/discussions/categories/q-a
+    about: Setup help and questions.

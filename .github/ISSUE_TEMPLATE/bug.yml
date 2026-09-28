@@ -1,0 +1,43 @@
+name: Bug
+description: Something does not work, or works wrongly
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: dropdown
+    id: hardware
+    attributes:
+      label: Hardware
+      options:
+        - Simulation only (npm run sim)
+        - One SO-101
+        - Leader and follower
+        - LeKiwi base
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: moved
+    attributes:
+      label: Did hardware move unexpectedly?
+      description: If yes, this is a safety issue; see SECURITY.md.
+      options:
+        - "No"
+        - "Yes"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Bridge output
+      description: The bridge's terminal output around the problem, and the browser console if a page is involved.
+      render: text
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: OS, browser, Node, Python and LeRobot versions.

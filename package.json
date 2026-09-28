@@ -9,6 +9,7 @@
     "preview": "vite preview web",
     "server": "node --env-file-if-exists=.env server/index.js",
     "start": "concurrently -n web,bridge -c cyan,magenta \"npm:dev\" \"npm:server\"",
+    "sim": "npm run build && ARM_DRY=1 ARM_PORT=sim LEADER_PORT=sim BASE_DRY=1 node server/index.js",
     "server:dry": "ARM_DRY=1 BASE_DRY=1 node --env-file-if-exists=.env server/index.js",
     "jog": "${ARM_PYTHON:-python3} drivers/jog.py",
     "lint": "eslint .",
