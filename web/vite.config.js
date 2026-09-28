@@ -17,6 +17,8 @@ const pageRoutes = {
 
 export default defineConfig({
   plugins: [pageRoutes],
+  // One .env at the repo root serves both the bridge and the web build.
+  envDir: resolve(__dirname, ".."),
   server: {
     // The bridge owns /api (joint map, state); the dev server only serves the UI.
     proxy: { "/api": "http://localhost:8787" },

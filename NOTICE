@@ -1,0 +1,20 @@
+Twinstage
+Copyright 2026 Charan Sai Soma
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This product bundles third-party assets and depends on third-party software:
+
+- SO-101 robot description (web/public/urdf/SO101/): URDF and STL meshes
+  generated with onshape-to-robot from TheRobotStudio's SO-ARM100 design,
+  https://github.com/TheRobotStudio/SO-ARM100, Apache License 2.0.
+
+- LeKiwi robot description (web/public/urdf/LeKiwi/): URDF and meshes from
+  SIGRobotics-UIUC, https://github.com/SIGRobotics-UIUC/LeKiwi, Apache License
+  2.0 (see web/public/urdf/LeKiwi/LICENSE.txt). Wheel meshes were decimated.
+
+- MediaPipe Hand Landmarker model and WebAssembly runtime (web/public/mediapipe/),
+  Google LLC, https://github.com/google-ai-edge/mediapipe, Apache License 2.0.
+
+- three.js, MIT License. Lucide icons, ISC License. LeRobot (used by the
+  Python drivers, not bundled), Hugging Face, Apache License 2.0.

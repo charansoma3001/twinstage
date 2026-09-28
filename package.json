@@ -7,9 +7,9 @@
     "dev": "vite web",
     "build": "vite build web",
     "preview": "vite preview web",
-    "server": "node server/index.js",
+    "server": "node --env-file-if-exists=.env server/index.js",
     "start": "concurrently -n web,bridge -c cyan,magenta \"npm:dev\" \"npm:server\"",
-    "server:dry": "ARM_DRY=1 BASE_DRY=1 node server/index.js",
+    "server:dry": "ARM_DRY=1 BASE_DRY=1 node --env-file-if-exists=.env server/index.js",
     "jog": "${ARM_PYTHON:-python3} drivers/jog.py"
   },
   "dependencies": {
@@ -34,6 +34,6 @@
     "url": "git+https://github.com/charansoma3001/twinstage.git"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.9"
   }
 }
