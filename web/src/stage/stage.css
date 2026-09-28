@@ -1,0 +1,301 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --ember: #fe5e0e;
+  --sun: #febe42;
+  --ink: #000b1a;
+  --ink-60: #5b6270;
+  --ink-40: #9aa0aa;
+  --card: rgba(255, 255, 255, 0.82);
+  --line: rgba(0, 11, 26, 0.07);
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: Urbanist, system-ui, sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(1200px 700px at 30% 40%, #fbf8f3 0%, rgba(251, 248, 243, 0) 70%),
+    radial-gradient(900px 600px at 85% 90%, #fbe2c9 0%, rgba(251, 226, 201, 0) 70%),
+    linear-gradient(180deg, #efece7 0%, #ece5da 100%);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+@layer components {
+  .card {
+    background: var(--card);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 22px;
+    box-shadow: 0 18px 50px -24px rgba(0, 11, 26, 0.25), 0 2px 6px -2px rgba(0, 11, 26, 0.06);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: 2.5rem;
+    padding: 0 1.1rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--ink);
+    transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+  }
+  .pill:hover { background: #fff; }
+  .pill.is-on {
+    background: var(--ember);
+    color: #fff;
+    box-shadow: 0 10px 24px -10px rgba(254, 94, 14, 0.7);
+  }
+  .pill .count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5rem;
+    height: 1.5rem;
+    padding: 0 0.4rem;
+    border-radius: 999px;
+    background: #fff;
+    color: var(--ink);
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .segment {
+    display: inline-flex;
+    padding: 4px;
+    gap: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+  }
+  .segment .pill {
+    background: transparent;
+    border-color: transparent;
+    height: 2.25rem;
+  }
+  .segment .pill.is-on { background: var(--ember); }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    height: 1.4rem;
+    padding: 0 0.6rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    background: rgba(0, 11, 26, 0.06);
+    color: var(--ink-60);
+  }
+  .tag::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .tag[data-tone="ok"] { background: var(--ember); color: #fff; }
+  .tag[data-tone="sun"] { background: var(--sun); color: var(--ink); }
+  .tag[data-tone="dry"] { background: #e8eef7; color: #2d5b8a; }
+  .tag[data-tone="warn"] { background: #fff1d1; color: #9a6100; }
+  .tag[data-tone="bad"] { background: #ffe1e1; color: #c0262d; }
+  .tag[data-tone="off"] { background: rgba(0, 11, 26, 0.06); color: var(--ink-40); }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--ink-40);
+  }
+  .dot[data-tone="ok"] { background: #22c55e; box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.15); }
+  .dot[data-tone="dry"] { background: #3b82f6; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15); }
+  .dot[data-tone="warn"] { background: var(--sun); box-shadow: 0 0 0 4px rgba(254, 190, 66, 0.2); }
+  .dot[data-tone="bad"] { background: #ef4444; box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15); }
+
+  .eyebrow {
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-40);
+    font-weight: 600;
+  }
+
+  .joint-row {
+    display: grid;
+    grid-template-columns: 4.2rem 1fr 3.2rem;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.78rem;
+    color: var(--ink-60);
+  }
+  .joint-row .bar {
+    position: relative;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(0, 11, 26, 0.07);
+  }
+  .joint-row .bar i {
+    position: absolute;
+    top: -3px;
+    width: 10px;
+    height: 10px;
+    margin-left: -5px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 0 3px #fff;
+  }
+  .joint-row b {
+    text-align: right;
+    font-weight: 600;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Tick gauge, after the reference's "Torq load" card. */
+  .ticks {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 2.4rem;
+  }
+  /* --on runs 0..1 per tick, set every frame, so the bar grows continuously. */
+  .ticks span {
+    --on: 0;
+    flex: 1;
+    height: calc(55% + 45% * var(--on));
+    border-radius: 1px;
+    background: rgba(255, 255, 255, calc(0.45 + 0.55 * var(--on)));
+  }
+
+  .base-key {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    height: 2rem;
+    padding: 0 0.4rem;
+    border-radius: 10px;
+    background: rgba(0, 11, 26, 0.06);
+    color: var(--ink);
+    font-weight: 600;
+    font-size: 0.85rem;
+  }
+  .base-key.held {
+    background: var(--ember);
+    color: #fff;
+  }
+
+  .prim-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.55rem 0.75rem;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-align: left;
+    line-height: 1.15;
+    transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+  }
+  .prim-btn:hover { background: #fff; }
+  .prim-btn .prim-ico {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 1.9rem;
+    height: 1.9rem;
+    border-radius: 50%;
+    background: var(--ember-soft, #ffe3d3);
+    color: var(--ember);
+    font-size: 1rem;
+  }
+  .prim-btn.is-on {
+    background: var(--ember);
+    color: #fff;
+    box-shadow: 0 10px 24px -12px rgba(254, 94, 14, 0.7);
+  }
+  .prim-btn.is-on .prim-ico { background: rgba(255, 255, 255, 0.25); color: #fff; }
+
+  .stop {
+    height: 2.75rem;
+    padding: 0 1.5rem;
+    border-radius: 999px;
+    background: #e11d2e;
+    color: #fff;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    box-shadow: 0 12px 26px -12px rgba(225, 29, 46, 0.8);
+  }
+  .stop:hover { background: #f0263a; }
+}
+
+/* Camera cards: a card leaving fades out to the left while its slot folds
+   away, so the card below slides up into its place. */
+.slot {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.slot-inner {
+  min-height: 0;
+  overflow: hidden;
+  /* Room for the card's shadow inside the clip. */
+  margin: -0.75rem -1.5rem 0;
+  padding: 0.75rem 1.5rem 1rem;
+  transition: padding-bottom 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.slot-inner > .card {
+  transition: opacity 0.35s ease, transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.slot.is-away {
+  grid-template-rows: 0fr;
+}
+.slot.is-away .slot-inner {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.slot.is-away .slot-inner > .card {
+  opacity: 0;
+  transform: translateX(-3rem);
+}
+
+.ticks.ticks-dark span { background: rgba(0, 11, 26, calc(0.18 + 0.82 * var(--on))); }
+
+#stage-title, #explain-title, #explain-body {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.is-fading {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.rise-in {
+  animation: rise-in 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+.toast-enter {
+  animation: toast-in 0.25s ease-out;
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translate(-50%, -8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}

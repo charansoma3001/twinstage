@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#090d16">
+<title>LeKiwi Drive</title>
+<style>
+  :root {
+    --bg: #090d16; --panel: #111827; --line: #1f2937; --text: #e5e7eb; --muted: #9ca3af;
+    --accent: #22d3ee; --warn: #f59e0b; --stop: #e11d48; --ok: #34d399;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font: 15px/1.3 system-ui, -apple-system, sans-serif; overscroll-behavior: none; }
+  body { display: flex; flex-direction: column; gap: 14px; padding: 16px;
+    padding-bottom: max(16px, env(safe-area-inset-bottom)); user-select: none; -webkit-user-select: none;
+    touch-action: none; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  h1 { font-size: 16px; margin: 0; letter-spacing: .04em; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; font: 12px ui-monospace, monospace;
+    padding: 4px 8px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .readout { font: 12px ui-monospace, monospace; color: var(--muted); text-align: center; min-height: 1.3em; }
+  .readout b { color: var(--text); font-weight: 600; }
+  #pad { position: relative; align-self: center; width: min(78vw, 340px); aspect-ratio: 1; border-radius: 50%;
+    background: radial-gradient(circle, #0f1a2b 0 58%, var(--panel) 59%); border: 2px solid var(--line); }
+  #pad::before, #pad::after { content: ""; position: absolute; background: var(--line); }
+  #pad::before { left: 50%; top: 10%; bottom: 10%; width: 1px; }
+  #pad::after { top: 50%; left: 10%; right: 10%; height: 1px; }
+  #knob { position: absolute; left: 50%; top: 50%; width: 30%; aspect-ratio: 1; border-radius: 50%;
+    transform: translate(-50%, -50%); background: var(--accent); opacity: .85; box-shadow: 0 0 24px #22d3ee55;
+    transition: transform .08s; z-index: 1; }
+  #pad.active #knob { transition: none; }
+  .hint { position: absolute; font: 11px ui-monospace, monospace; color: var(--muted); }
+  .row { display: flex; gap: 12px; }
+  button { flex: 1; font: 600 15px system-ui, sans-serif; color: var(--text); background: var(--panel);
+    border: 1px solid var(--line); border-radius: 14px; padding: 18px 8px; touch-action: none; }
+  button.held { background: #164e63; border-color: var(--accent); }
+  .speed button { padding: 10px 6px; font-size: 13px; }
+  .speed button.on { background: #0e7490; border-color: var(--accent); }
+  #stop { background: var(--stop); border-color: #fb7185; font-size: 20px; letter-spacing: .08em; padding: 20px; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>LEKIWI DRIVE</h1>
+    <span class="badge"><span class="dot" id="dot"></span><span id="status">Connecting</span></span>
+  </header>
+
+  <div class="readout" id="readout">&nbsp;</div>
+
+  <div id="pad">
+    <span class="hint" style="top:4%;left:50%;transform:translateX(-50%)">FWD</span>
+    <span class="hint" style="bottom:4%;left:50%;transform:translateX(-50%)">BACK</span>
+    <span class="hint" style="left:4%;top:50%;transform:translateY(-50%)">L</span>
+    <span class="hint" style="right:4%;top:50%;transform:translateY(-50%)">R</span>
+    <div id="knob"></div>
+  </div>
+
+  <div class="row">
+    <button id="rot-left">&#8634; Turn</button>
+    <button id="rot-right">Turn &#8635;</button>
+  </div>
+
+  <div class="row speed" id="speed">
+    <button data-s="0.4">Slow</button>
+    <button data-s="0.7" class="on">Medium</button>
+    <button data-s="1">Fast</button>
+  </div>
+
+  <button id="stop">STOP</button>
+
+<script>
+(() => {
+  const SEND_MS = 50;        // 20 Hz while an input is held; the driver's watchdog is 400 ms
+  const DEADZONE = 0.12;
+
+  const $ = (id) => document.getElementById(id);
+  const statusEl = $("status"), dotEl = $("dot"), readout = $("readout");
+  const pad = $("pad"), knob = $("knob");
+
+  // Served by the bridge (same host) or, in development, by Vite on 5173.
+  const wsUrl = location.port === "5173"
+    ? `ws://${location.hostname}:8787`
+    : `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}`;
+
+  let ws = null, speed = 0.7, busyUntil = 0, baseInfo = null;
+  const input = { x: 0, y: 0, w: 0 };
+  let padPointer = null, rotPointers = new Map();
+  let wasMoving = false;
+
+  function setStatus(text, color) { statusEl.textContent = text; dotEl.style.background = color; }
+
+  function connect() {
+    ws = new WebSocket(wsUrl);
+    ws.onopen = () => setStatus("Linked", "var(--ok)");
+    ws.onclose = () => { setStatus("Offline", "var(--muted)"); ws = null; setTimeout(connect, 1000); };
+    ws.onerror = () => setStatus("Offline", "var(--stop)");
+    ws.onmessage = (ev) => {
+      let m; try { m = JSON.parse(ev.data); } catch { return; }
+      if (m.type === "hello") baseInfo = m.base;
+      if (m.type !== "base") return;
+      if (m.kind === "busy") busyUntil = performance.now() + 1200;
+      if (m.kind === "exit") baseInfo = { ...baseInfo, ready: false };
+      if (m.kind === "ready") baseInfo = { ...baseInfo, spawned: true, ready: true, dryRun: m.dry_run };
+      if (m.kind === "odom") {
+        readout.innerHTML = `<b>${m.vel[0].toFixed(2)}</b> fwd · <b>${m.vel[1].toFixed(2)}</b> left m/s · ` +
+          `<b>${m.vel[2].toFixed(0)}</b>°/s${m.stale ? " · idle" : ""}`;
+      }
+    };
+  }
+
+  function send(obj) {
+    if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
+  }
+
+  function refreshBadge() {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    if (performance.now() < busyUntil) return setStatus("Someone else is driving", "var(--warn)");
+    if (!baseInfo || !baseInfo.spawned) return setStatus("No base on bridge", "var(--warn)");
+    if (!baseInfo.ready) return setStatus("Base starting", "var(--warn)");
+    setStatus(baseInfo.dryRun ? "Linked · dry run" : "Linked · LIVE", baseInfo.dryRun ? "var(--accent)" : "var(--ok)");
+  }
+
+  function tick() {
+    const moving = Math.abs(input.x) + Math.abs(input.y) + Math.abs(input.w) > 0;
+    if (moving) {
+      send({ cmd: "drive", x: input.x * speed, y: input.y * speed, w: input.w * speed });
+    } else if (wasMoving) {
+      send({ cmd: "drive", x: 0, y: 0, w: 0 });
+    }
+    wasMoving = moving;
+    refreshBadge();
+  }
+  setInterval(tick, SEND_MS);
+
+  function stopAll() {
+    input.x = input.y = input.w = 0;
+    padPointer = null; rotPointers.clear();
+    pad.classList.remove("active");
+    knob.style.transform = "translate(-50%, -50%)";
+    document.querySelectorAll(".held").forEach((b) => b.classList.remove("held"));
+    send({ cmd: "base_stop" });
+  }
+
+  /* Joystick: forward is up, left is left. Holonomic, so both axes at once. */
+  function padMove(ev) {
+    const r = pad.getBoundingClientRect();
+    const rad = r.width / 2;
+    let dx = (ev.clientX - (r.left + rad)) / rad;
+    let dy = (ev.clientY - (r.top + rad)) / rad;
+    const mag = Math.hypot(dx, dy);
+    if (mag > 1) { dx /= mag; dy /= mag; }
+    knob.style.transform = `translate(calc(-50% + ${dx * rad * 0.7}px), calc(-50% + ${dy * rad * 0.7}px))`;
+    const m = Math.min(1, mag);
+    const scale = m < DEADZONE ? 0 : (m - DEADZONE) / (1 - DEADZONE) / (m || 1);
+    input.x = -dy * scale;
+    input.y = -dx * scale;
+  }
+  pad.addEventListener("pointerdown", (ev) => {
+    padPointer = ev.pointerId; pad.setPointerCapture(ev.pointerId);
+    pad.classList.add("active"); padMove(ev);
+  });
+  pad.addEventListener("pointermove", (ev) => { if (ev.pointerId === padPointer) padMove(ev); });
+  const padEnd = (ev) => {
+    if (ev.pointerId !== padPointer) return;
+    padPointer = null; input.x = input.y = 0;
+    pad.classList.remove("active"); knob.style.transform = "translate(-50%, -50%)";
+  };
+  ["pointerup", "pointercancel", "lostpointercapture"].forEach((t) => pad.addEventListener(t, padEnd));
+
+  /* Turn buttons: hold to turn, release to stop. */
+  for (const [id, w] of [["rot-left", 1], ["rot-right", -1]]) {
+    const b = $(id);
+    b.addEventListener("pointerdown", (ev) => {
+      b.setPointerCapture(ev.pointerId); rotPointers.set(ev.pointerId, w);
+      b.classList.add("held"); input.w = w;
+    });
+    const end = (ev) => {
+      if (!rotPointers.delete(ev.pointerId)) return;
+      b.classList.remove("held");
+      input.w = rotPointers.size ? [...rotPointers.values()].pop() : 0;
+    };
+    ["pointerup", "pointercancel", "lostpointercapture"].forEach((t) => b.addEventListener(t, end));
+  }
+
+  $("speed").addEventListener("click", (ev) => {
+    const b = ev.target.closest("button"); if (!b) return;
+    speed = Number(b.dataset.s);
+    document.querySelectorAll("#speed button").forEach((x) => x.classList.toggle("on", x === b));
+  });
+
+  $("stop").addEventListener("pointerdown", stopAll);
+  // A locked screen, a switched app or a notification must never leave the base driving.
+  document.addEventListener("visibilitychange", () => { if (document.hidden) stopAll(); });
+  window.addEventListener("blur", stopAll);
+  window.addEventListener("pagehide", stopAll);
+  document.addEventListener("contextmenu", (ev) => ev.preventDefault());
+
+  connect();
+})();
+</script>
+</body>
+</html>

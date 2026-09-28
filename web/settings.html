@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings · SO-101 Studio</title>
+</head>
+<body class="bg-slate-950 text-slate-100 h-screen w-screen overflow-hidden flex flex-col">
+
+  <!-- TOP APP HEADER -->
+  <header class="h-14 border-b border-slate-800 bg-slate-900/90 px-4 flex items-center justify-between z-30 shrink-0">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20">
+        <i data-lucide="bot" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <h1 class="text-sm font-bold tracking-wide flex items-center gap-2">
+          SO-101 OVERHEAD RETARGETING
+          <span class="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-emerald-950 border border-emerald-800 text-emerald-400">4-Corner Calibrated</span>
+        </h1>
+        <p class="text-[11px] text-slate-400">Overhead Perspective Homography & 3D Table-to-Sim Kinematic Mapping</p>
+      </div>
+    </div>
+
+    <!-- Live Telemetry Badges -->
+    <div class="flex items-center gap-2 sm:gap-4">
+      <div class="hidden md:flex items-center gap-3 px-3 py-1 rounded-md bg-slate-800/70 border border-slate-700 text-xs font-mono">
+        <div class="flex items-center gap-1.5">
+          <span id="tracking-indicator" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+          <span id="tracking-status" class="text-slate-300">Interactive Mode</span>
+        </div>
+        <div class="h-3 w-px bg-slate-700"></div>
+        <div class="text-slate-400">Target Error: <span id="pos-error" class="text-emerald-400 font-semibold">0.0 mm</span></div>
+        <div class="h-3 w-px bg-slate-700"></div>
+        <div class="text-slate-400">FPS: <span id="fps-counter" class="text-emerald-400 font-semibold">60</span></div>
+      </div>
+
+      <!-- Mode Switcher -->
+      <div id="arm-mode-switch" class="flex bg-slate-800 p-0.5 rounded-lg border border-slate-700 text-xs">
+        <button id="mode-interactive" class="px-3 py-1.5 rounded-md font-medium bg-cyan-600 text-white shadow transition-all flex items-center gap-1.5">
+          <i data-lucide="mouse-pointer" class="w-3.5 h-3.5"></i> Interactive
+        </button>
+        <button id="mode-webcam" class="px-3 py-1.5 rounded-md font-medium text-slate-300 hover:text-white transition-all flex items-center gap-1.5">
+          <i data-lucide="camera" class="w-3.5 h-3.5"></i> Live Camera
+        </button>
+        <button id="mode-demo" class="px-3 py-1.5 rounded-md font-medium text-slate-300 hover:text-white transition-all flex items-center gap-1.5">
+          <i data-lucide="play" class="w-3.5 h-3.5"></i> Auto Demo
+        </button>
+      </div>
+
+      <div class="flex items-center gap-1.5">
+        <button id="btn-robot-link" class="px-2.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white transition flex items-center gap-1.5 text-xs font-mono" title="Connect to SO-101 backend bridge">
+          <span id="robot-link-dot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+          <span id="robot-link-label" class="hidden sm:inline">Bridge</span>
+        </button>
+        <button id="btn-arm-relax" class="px-2.5 py-2 rounded-lg bg-rose-950/70 hover:bg-rose-900 border border-rose-800 text-rose-300 hover:text-rose-100 transition flex items-center gap-1.5 text-xs font-mono" title="Cut torque to the real arm (Esc). Press again to re-enable and hold.">
+          <i data-lucide="octagon-x" class="w-3.5 h-3.5"></i>
+          <span id="arm-relax-label" class="hidden sm:inline">Relax</span>
+        </button>
+      </div>
+
+      <a href="/" class="px-3 py-2 rounded-lg bg-orange-600 hover:bg-orange-500 text-white text-xs font-semibold transition" title="Back to the big-screen stage">Stage</a>
+
+      <button id="btn-reset-scene" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white transition" title="Reset View & Arm">
+        <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE -->
+  <div class="flex-1 flex overflow-hidden relative">
+
+    <!-- LEFT DRAWER: 4-Corner Calibration & Overhead Camera Stream -->
+    <aside id="left-drawer" class="w-80 sm:w-96 border-r border-slate-800 bg-slate-900/90 flex flex-col z-20 shrink-0 custom-scrollbar overflow-y-auto">
+
+      <!-- Stage setup: which camera is which, and which hand drives which arm -->
+      <div class="p-3 border-b border-slate-800 space-y-2 text-xs">
+        <div class="flex items-center justify-between">
+          <span class="font-semibold text-slate-300 flex items-center gap-1.5">
+            <i data-lucide="camera" class="w-3.5 h-3.5 text-cyan-400"></i> Cameras &amp; hands
+          </span>
+          <button id="btn-cam-refresh" class="text-[10px] text-cyan-400 hover:underline">Find cameras</button>
+        </div>
+        <label class="block space-y-1">
+          <span class="text-[10px] uppercase tracking-wide text-slate-500">Hand camera (top-down, both hands)</span>
+          <select id="sel-cam-hands" class="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-slate-200"></select>
+        </label>
+        <label class="block space-y-1">
+          <span class="text-[10px] uppercase tracking-wide text-slate-500">Follower camera (view only)</span>
+          <select id="sel-cam-follower" class="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-slate-200"></select>
+        </label>
+        <div class="grid grid-cols-2 gap-2">
+          <button id="btn-leader-side" class="py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition" title="Which side of the calibrated area, and which hand, drives the leader">Leader: left</button>
+          <button id="btn-flip-labels" class="py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition" title="MediaPipe's left/right labels assume a selfie camera; a top-down camera can report them swapped">Hand labels: as reported</button>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <label class="block space-y-1">
+            <span class="text-[10px] uppercase tracking-wide text-slate-500">Arm spacing (cm)</span>
+            <input id="in-arm-spacing" type="number" min="10" max="150" step="0.5" class="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-slate-200" title="Centre to centre of the two arms' bases, measured on the table">
+          </label>
+          <label class="block space-y-1">
+            <span class="text-[10px] uppercase tracking-wide text-slate-500">Min gripper gap (cm)</span>
+            <input id="in-min-gap" type="number" min="0" max="60" step="0.5" class="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-slate-200" title="Closest the two grippers may come to each other, across the midline">
+          </label>
+        </div>
+        <p class="text-[10px] text-slate-500 leading-snug">In Hands and Primitives neither gripper crosses within half the gap of the midline between the bases, so the arms cannot meet in the middle. Measure the spacing on the real table.</p>
+        <p class="text-[10px] text-slate-500 leading-snug">Each hand works the whole calibrated table, over its own arm's reach. Check on the stage that each skeleton is coloured for the arm you expect; if they are swapped, flip the labels here.</p>
+      </div>
+
+      <!-- Video Feed & Tracking Canvas -->
+      <div class="p-3 border-b border-slate-800">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+            <i data-lucide="video" class="w-3.5 h-3.5 text-cyan-400"></i> Overhead Calibration View
+          </span>
+          <span id="cam-pov-badge" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-950 border border-cyan-800 text-cyan-300">Table Top-Down</span>
+        </div>
+
+        <!-- Video Container -->
+        <div class="relative w-full aspect-[4/3] bg-slate-950 rounded-lg overflow-hidden border border-slate-800 flex items-center justify-center cursor-crosshair">
+          <video id="webcam-video" class="absolute inset-0 w-full h-full object-cover hidden" playsinline></video>
+          <canvas id="hand-canvas" class="absolute inset-0 w-full h-full object-cover z-10"></canvas>
+          
+          <div id="synthetic-placeholder" class="text-center p-4 z-0">
+            <div class="w-12 h-12 rounded-full bg-cyan-950/80 border border-cyan-800 text-cyan-400 mx-auto flex items-center justify-center mb-2 animate-bounce">
+              <i data-lucide="hand" class="w-6 h-6"></i>
+            </div>
+            <p class="text-xs text-slate-300 font-medium">Interactive Mode Active</p>
+            <p class="text-[11px] text-slate-500 mt-1">Switch to "Live Camera" to calibrate your table and control the robot</p>
+          </div>
+          
+          <div id="cam-loading" class="absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center gap-2 z-20 hidden">
+            <div class="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+            <span class="text-xs text-cyan-300 font-mono">Initializing MediaPipe...</span>
+          </div>
+        </div>
+
+        <!-- Axis Inversion & Camera Display Controls -->
+        <div class="mt-2.5 grid grid-cols-3 gap-1.5 text-xs font-mono">
+          <button id="btn-toggle-mirror" class="py-1 px-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center gap-1 transition" title="Flip video preview display horizontally">
+            <i data-lucide="flip-horizontal" class="w-3 h-3 text-cyan-400"></i> Mirror: <span id="label-mirror-status">ON</span>
+          </button>
+          <button id="btn-toggle-inv-x" class="py-1 px-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center gap-1 transition" title="Invert Left/Right axis mapping">
+            <i data-lucide="move-horizontal" class="w-3 h-3 text-blue-400"></i> Inv X: <span id="label-inv-x">OFF</span>
+          </button>
+          <button id="btn-toggle-inv-z" class="py-1 px-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center gap-1 transition" title="Invert Forward/Back reach mapping">
+            <i data-lucide="move-vertical" class="w-3 h-3 text-purple-400"></i> Inv Z: <span id="label-inv-z">OFF</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 4-CORNER TABLE & HOVER CALIBRATION SUITE -->
+      <div class="p-3 border-b border-slate-800 space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] uppercase tracking-wider font-bold text-slate-300 flex items-center gap-1.5">
+            <i data-lucide="grid" class="w-3.5 h-3.5 text-emerald-400"></i> 4-Corner Workspace Calibrator
+          </span>
+          <div class="flex items-center gap-2">
+            <span id="calib-save-note" class="text-[10px] font-mono text-emerald-400 opacity-0 transition-opacity duration-300">Saved</span>
+            <button id="btn-reset-calibration" class="text-[10px] text-cyan-400 hover:underline">Reset Default</button>
+          </div>
+        </div>
+
+        <!-- Interactive Calibration Mode Tabs -->
+        <div class="flex bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs font-medium">
+          <button id="calib-tab-table" class="flex-1 py-1.5 rounded-md bg-emerald-900/80 border border-emerald-700 text-emerald-300 flex items-center justify-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span> 1. Table Plane (Min)
+          </button>
+          <button id="calib-tab-hover" class="flex-1 py-1.5 rounded-md text-slate-400 hover:text-slate-200 flex items-center justify-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-cyan-400"></span> 2. Hover Ceiling (Max)
+          </button>
+        </div>
+
+        <!-- Active Corner Wizard Instruction Banner -->
+        <div id="calib-instruction-box" class="p-2.5 rounded-lg bg-emerald-950/60 border border-emerald-800/80 text-xs space-y-1">
+          <div class="flex justify-between items-center">
+            <span class="font-bold text-emerald-300 flex items-center gap-1.5" id="calib-guide-title">
+              <i data-lucide="crosshair" class="w-3.5 h-3.5"></i> Calibrate Table Corners
+            </span>
+            <span id="calib-guide-step" class="font-mono text-[10px] text-emerald-400 bg-emerald-900 px-1.5 py-0.5 rounded">Point 1 of 4</span>
+          </div>
+          <p id="calib-guide-desc" class="text-[11px] text-slate-300">
+            Place hand flat on table at <strong>Top-Left (Far-Left)</strong> corner and tap Capture.
+          </p>
+          <button id="btn-capture-active-corner" class="w-full mt-1.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-md shadow transition flex items-center justify-center gap-1.5 text-xs">
+            <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Capture Current Hand Position
+          </button>
+        </div>
+
+        <!-- 4-Corner Grid Visual Status -->
+        <div class="space-y-1.5">
+          <div class="text-[10px] font-mono text-slate-400 flex justify-between">
+            <span>Direct Corner Overrides:</span>
+            <span id="label-live-palm">Live Palm: 18.0px</span>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+            <!-- Top Left -->
+            <button id="btn-corner-tl" class="p-2 rounded bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition flex justify-between items-center">
+              <div>
+                <div class="text-slate-300 font-bold">Top-Left (TL)</div>
+                <div class="text-[10px] text-slate-500" id="status-tl">X: -0.22, Z: 0.34</div>
+              </div>
+              <span class="w-2 h-2 rounded-full bg-emerald-400" id="dot-tl"></span>
+            </button>
+
+            <!-- Top Right -->
+            <button id="btn-corner-tr" class="p-2 rounded bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition flex justify-between items-center">
+              <div>
+                <div class="text-slate-300 font-bold">Top-Right (TR)</div>
+                <div class="text-[10px] text-slate-500" id="status-tr">X: +0.22, Z: 0.34</div>
+              </div>
+              <span class="w-2 h-2 rounded-full bg-emerald-400" id="dot-tr"></span>
+            </button>
+
+            <!-- Bottom Left -->
+            <button id="btn-corner-bl" class="p-2 rounded bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition flex justify-between items-center">
+              <div>
+                <div class="text-slate-300 font-bold">Bottom-Left (BL)</div>
+                <div class="text-[10px] text-slate-500" id="status-bl">X: -0.22, Z: 0.12</div>
+              </div>
+              <span class="w-2 h-2 rounded-full bg-emerald-400" id="dot-bl"></span>
+            </button>
+
+            <!-- Bottom Right -->
+            <button id="btn-corner-br" class="p-2 rounded bg-slate-950 hover:bg-slate-800 border border-slate-800 text-left transition flex justify-between items-center">
+              <div>
+                <div class="text-slate-300 font-bold">Bottom-Right (BR)</div>
+                <div class="text-[10px] text-slate-500" id="status-br">X: +0.22, Z: 0.12</div>
+              </div>
+              <span class="w-2 h-2 rounded-full bg-emerald-400" id="dot-br"></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Real-Time Height Interpolation Gauge -->
+        <div class="bg-slate-950/70 p-2.5 rounded-lg border border-slate-800 space-y-1.5">
+          <div class="flex justify-between items-center text-xs font-mono">
+            <span class="text-slate-300">Table Height (Y):</span>
+            <span id="gauge-height-val" class="text-cyan-400 font-bold">0.220 m</span>
+          </div>
+          <div class="relative w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
+            <div id="gauge-height-bar" class="h-full bg-gradient-to-r from-emerald-500 via-cyan-500 to-blue-500 transition-all duration-75" style="width: 55%;"></div>
+          </div>
+          <div class="flex justify-between text-[10px] text-slate-500 font-mono">
+            <span>Table (0.00m)</span>
+            <span id="gauge-height-pct">55%</span>
+            <span>Hover Max (0.34m)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- DEDICATED PINCH & GRIPPER APERTURE -->
+      <div class="p-3 border-b border-slate-800 space-y-3">
+        <div class="text-[11px] uppercase tracking-wider font-bold text-slate-400 flex items-center justify-between">
+          <span>Thumb Spread (Gripper Only)</span>
+          <i data-lucide="scissors" class="w-3.5 h-3.5 text-amber-400"></i>
+        </div>
+
+        <!-- Pinch Aperture Bar -->
+        <div class="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/80">
+          <div class="flex justify-between items-center text-xs mb-1.5">
+            <span class="text-slate-300 flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-cyan-400"></span> Thumb Spread $\angle(\mathbf{p}_4, \mathbf{p}_0, \mathbf{p}_5)$
+            </span>
+            <span id="metric-pinch-val" class="font-mono text-cyan-400 text-xs font-semibold">1.00 @ 37°</span>
+          </div>
+          <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+            <div id="metric-pinch-bar" class="h-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all" style="width: 80%;"></div>
+          </div>
+          <div class="flex justify-between text-[10px] text-slate-500 mt-1 font-mono">
+            <span>Closed (8°)</span>
+            <span>Proportional Grip Stroke</span>
+            <span>Open (34°)</span>
+          </div>
+        </div>
+
+        <!-- Forearm Pitch and Roll -->
+        <div class="grid grid-cols-2 gap-2 text-center font-mono text-xs">
+          <div class="bg-slate-950/60 p-2 rounded border border-slate-800">
+            <div class="text-[10px] text-slate-400">Wrist Pitch ($\theta$)</div>
+            <div id="val-pitch" class="font-bold text-slate-200 mt-0.5">-15°</div>
+          </div>
+          <div class="bg-slate-950/60 p-2 rounded border border-slate-800">
+            <div class="text-[10px] text-slate-400">Wrist Roll ($\phi$)</div>
+            <div id="val-roll" class="font-bold text-slate-200 mt-0.5">0°</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER: 3D THREE.JS SIMULATOR VIEWPORT -->
+    <div class="flex-1 relative bg-slate-950 overflow-hidden" id="canvas-container">
+      <div id="arm-overlays">
+      <div class="absolute top-3 left-3 z-10 flex gap-2">
+        <div class="glass-panel px-3 py-1.5 rounded-lg text-xs flex items-center gap-2 text-slate-300 shadow-lg">
+          <i data-lucide="move-3d" class="w-4 h-4 text-cyan-400"></i>
+          <span>Orbit: <strong class="text-slate-100">Left Click</strong> | Pan: <strong class="text-slate-100">Right Click</strong></span>
+        </div>
+        <button id="btn-spawn-cube" class="glass-panel px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 text-amber-300 hover:bg-slate-800 transition shadow-lg">
+          <i data-lucide="box" class="w-3.5 h-3.5"></i> Spawn Block
+        </button>
+      </div>
+
+      <!-- Coordinate Frame Legend -->
+      <div class="absolute bottom-3 left-3 z-10 glass-panel px-3 py-2 rounded-lg text-[11px] font-mono text-slate-300 space-y-1 shadow-lg">
+        <div class="text-[10px] text-slate-400 uppercase font-semibold">SO-101 Physical Table Coordinate Space</div>
+        <div class="flex items-center gap-3">
+          <span class="flex items-center gap-1"><span class="w-2.5 h-1 bg-red-500 rounded"></span> +X (Right)</span>
+          <span class="flex items-center gap-1"><span class="w-2.5 h-1 bg-green-500 rounded"></span> +Y (Up)</span>
+          <span class="flex items-center gap-1"><span class="w-2.5 h-1 bg-blue-500 rounded"></span> +Z (Forward Reach)</span>
+        </div>
+      </div>
+
+      <!-- Grasp State Indicator -->
+      <div id="grasp-feedback" class="absolute bottom-3 right-3 z-10 glass-panel px-3 py-1.5 rounded-lg text-xs font-mono text-slate-300 flex items-center gap-2 shadow-lg">
+        <span class="w-2 h-2 rounded-full bg-slate-500" id="grasp-dot"></span>
+        <span id="grasp-text">Gripper Free</span>
+      </div>
+      </div>
+    </div>
+
+    <!-- RIGHT DRAWER: Cartesian Sliders, Primitives & Actuator Telemetry -->
+    <aside id="right-drawer" class="w-88 sm:w-96 border-l border-slate-800 bg-slate-900/90 flex flex-col z-20 shrink-0 custom-scrollbar overflow-y-auto">
+      <div class="flex border-b border-slate-800 text-xs font-medium">
+        <button id="tab-btn-controls" class="flex-1 py-2.5 border-b-2 border-cyan-500 text-cyan-400 bg-slate-800/40 flex justify-center gap-1.5">
+          <i data-lucide="sliders" class="w-3.5 h-3.5"></i> Target Vectors
+        </button>
+        <button id="tab-btn-telemetry" class="flex-1 py-2.5 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex justify-center gap-1.5">
+          <i data-lucide="activity" class="w-3.5 h-3.5"></i> STS3215 Servos
+        </button>
+      </div>
+
+      <!-- TAB 1: CONTROLS & TASK PRIMITIVES -->
+      <div id="tab-content-controls" class="p-4 space-y-4 flex-1">
+        <div class="space-y-3">
+          <div class="flex justify-between items-center text-xs font-semibold text-slate-200">
+            <span class="flex items-center gap-1.5"><i data-lucide="target" class="w-3.5 h-3.5 text-cyan-400"></i> Cartesian Target $[X, Y, Z]$</span>
+            <button id="btn-center-target" class="text-[10px] text-cyan-400 hover:underline">Center</button>
+          </div>
+          
+          <div class="space-y-1 text-xs font-mono">
+            <div class="flex justify-between"><span class="text-red-400">X (Pan / Side):</span> <span id="label-target-x">0.000 m</span></div>
+            <input type="range" id="slider-target-x" min="-0.25" max="0.25" step="0.005" value="0.0" class="w-full">
+          </div>
+          <div class="space-y-1 text-xs font-mono">
+            <div class="flex justify-between"><span class="text-green-400">Y (Height):</span> <span id="label-target-y">0.220 m</span></div>
+            <input type="range" id="slider-target-y" min="0.0" max="0.35" step="0.005" value="0.22" class="w-full">
+          </div>
+          <div class="space-y-1 text-xs font-mono">
+            <div class="flex justify-between"><span class="text-blue-400">Z (Reach / Forward):</span> <span id="label-target-z">0.240 m</span></div>
+            <input type="range" id="slider-target-z" min="0.10" max="0.35" step="0.005" value="0.24" class="w-full">
+          </div>
+        </div>
+
+        <div class="space-y-3 pt-2 border-t border-slate-800">
+          <div class="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+            <i data-lucide="compass" class="w-3.5 h-3.5 text-cyan-400"></i> Wrist Orientation & Gripper
+          </div>
+          <div class="space-y-1 text-xs font-mono">
+            <div class="flex justify-between">
+              <span class="text-slate-300">Pitch (Angle from Horizon):</span> <span id="label-wrist-pitch" class="text-cyan-400">-90°</span>
+            </div>
+            <input type="range" id="slider-wrist-pitch" min="-90" max="90" step="1" value="-90" class="w-full">
+          </div>
+          <div class="space-y-1 text-xs font-mono">
+            <div class="flex justify-between">
+              <span class="text-slate-300">Roll (Wrist):</span> <span id="label-wrist-roll" class="text-cyan-400">0°</span>
+            </div>
+            <input type="range" id="slider-wrist-roll" min="-90" max="90" step="1" value="0" class="w-full">
+          </div>
+          <div class="space-y-1 text-xs font-mono">
+            <div class="flex justify-between">
+              <span class="text-amber-400">Gripper Aperture:</span> <span id="label-gripper-stroke" class="text-slate-300">80%</span>
+            </div>
+            <input type="range" id="slider-gripper" min="0" max="100" step="1" value="80" class="w-full">
+          </div>
+        </div>
+
+        <!-- Egocentric Task Primitives Section -->
+        <div class="space-y-2 pt-3 border-t border-slate-800">
+          <span class="text-[11px] uppercase tracking-wider font-bold text-slate-400 block">Egocentric Task Primitives</span>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <button id="btn-demo-pick" class="p-2.5 rounded-lg bg-slate-950/80 hover:bg-slate-800 text-slate-200 border border-slate-800 hover:border-slate-700 flex items-center justify-center gap-2 transition shadow-sm font-medium">
+              <i data-lucide="arrow-down-to-dot" class="w-4 h-4 text-cyan-400"></i> Pick & Place
+            </button>
+            <button id="btn-demo-pinch" class="p-2.5 rounded-lg bg-slate-950/80 hover:bg-slate-800 text-slate-200 border border-slate-800 hover:border-slate-700 flex items-center justify-center gap-2 transition shadow-sm font-medium">
+              <i data-lucide="scissors" class="w-4 h-4 text-amber-400"></i> Precision Pinch
+            </button>
+            <button id="btn-demo-wave" class="p-2.5 rounded-lg bg-slate-950/80 hover:bg-slate-800 text-slate-200 border border-slate-800 hover:border-slate-700 flex items-center justify-center gap-2 transition shadow-sm font-medium">
+              <i data-lucide="hand" class="w-4 h-4 text-blue-400"></i> Waveform Scan
+            </button>
+            <button id="btn-demo-rest" class="p-2.5 rounded-lg bg-slate-950/80 hover:bg-slate-800 text-slate-200 border border-slate-800 hover:border-slate-700 flex items-center justify-center gap-2 transition shadow-sm font-medium">
+              <i data-lucide="home" class="w-4 h-4 text-slate-400"></i> Rest Pose
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: TELEMETRY -->
+      <div id="tab-content-telemetry" class="p-4 space-y-3 flex-1 hidden">
+        <div class="flex items-center justify-between text-xs">
+          <span class="font-bold text-slate-300 uppercase tracking-wider">STS3215 Actuator Bus</span>
+          <span class="text-[10px] font-mono text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800">1 Mbps OK</span>
+        </div>
+        <div id="servos-container" class="space-y-2 text-xs font-mono"></div>
+
+        <!-- ARM TWIN: measure the sim <-> hardware joint map against the render -->
+        <div class="pt-3 border-t border-slate-800 space-y-2">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-bold text-slate-300 uppercase tracking-wider">Sim &harr; Arm Joint Map</span>
+            <span id="twin-save-note" class="text-[10px] font-mono text-slate-500"></span>
+          </div>
+          <div class="flex bg-slate-800 p-0.5 rounded-lg border border-slate-700 text-xs" id="twin-arm-select">
+            <button data-arm="follower" class="flex-1 py-1 rounded-md bg-cyan-600 text-white">Follower</button>
+            <button data-arm="leader" class="flex-1 py-1 rounded-md text-slate-300">Leader</button>
+          </div>
+          <p id="twin-hint" class="text-[10px] text-slate-500 leading-snug">Link the bridge, then mirror to measure the joint map against the real arm.</p>
+          <button id="btn-twin-mirror" class="flex-1 w-full py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-mono transition">
+            <span id="twin-mirror-label">Mirror Real Arm</span>
+          </button>
+          <div class="space-y-2 text-xs font-mono pt-1">
+          <div class="space-y-1">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-slate-300 w-20 shrink-0">J1 Pan</span>
+              <button id="twin-sign-shoulder_pan" class="w-6 h-6 rounded bg-slate-800 border border-slate-700 text-slate-300 font-mono" title="Flip this joint's direction">+</button>
+              <span id="twin-read-shoulder_pan" class="text-[10px] text-cyan-400 text-right flex-1 truncate">0.0&deg;</span>
+            </div>
+            <input type="range" id="twin-offset-shoulder_pan" min="-180" max="180" step="0.5" value="0" class="w-full">
+          </div>
+          <div class="space-y-1">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-slate-300 w-20 shrink-0">J2 Lift</span>
+              <button id="twin-sign-shoulder_lift" class="w-6 h-6 rounded bg-slate-800 border border-slate-700 text-slate-300 font-mono" title="Flip this joint's direction">+</button>
+              <span id="twin-read-shoulder_lift" class="text-[10px] text-cyan-400 text-right flex-1 truncate">0.0&deg;</span>
+            </div>
+            <input type="range" id="twin-offset-shoulder_lift" min="-180" max="180" step="0.5" value="0" class="w-full">
+          </div>
+          <div class="space-y-1">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-slate-300 w-20 shrink-0">J3 Elbow</span>
+              <button id="twin-sign-elbow_flex" class="w-6 h-6 rounded bg-slate-800 border border-slate-700 text-slate-300 font-mono" title="Flip this joint's direction">+</button>
+              <span id="twin-read-elbow_flex" class="text-[10px] text-cyan-400 text-right flex-1 truncate">0.0&deg;</span>
+            </div>
+            <input type="range" id="twin-offset-elbow_flex" min="-180" max="180" step="0.5" value="0" class="w-full">
+          </div>
+          <div class="space-y-1">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-slate-300 w-20 shrink-0">J4 W-Flex</span>
+              <button id="twin-sign-wrist_flex" class="w-6 h-6 rounded bg-slate-800 border border-slate-700 text-slate-300 font-mono" title="Flip this joint's direction">+</button>
+              <span id="twin-read-wrist_flex" class="text-[10px] text-cyan-400 text-right flex-1 truncate">0.0&deg;</span>
+            </div>
+            <input type="range" id="twin-offset-wrist_flex" min="-180" max="180" step="0.5" value="0" class="w-full">
+          </div>
+          <div class="space-y-1">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-slate-300 w-20 shrink-0">J5 W-Roll</span>
+              <button id="twin-sign-wrist_roll" class="w-6 h-6 rounded bg-slate-800 border border-slate-700 text-slate-300 font-mono" title="Flip this joint's direction">+</button>
+              <span id="twin-read-wrist_roll" class="text-[10px] text-cyan-400 text-right flex-1 truncate">0.0&deg;</span>
+            </div>
+            <input type="range" id="twin-offset-wrist_roll" min="-180" max="180" step="0.5" value="0" class="w-full">
+          </div>
+            <div class="flex items-center justify-between text-[10px] text-slate-400 pt-1">
+              <span>Gripper reported</span><span id="twin-gripper-read" class="text-cyan-400">--</span>
+            </div>
+          </div>
+          <div class="flex gap-2 pt-1">
+            <button id="btn-twin-zero" class="flex-1 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-[11px] font-mono transition" title="Take the arm's present reading as the URDF zero pose for every joint">Arm is at URDF zero</button>
+            <button id="btn-twin-save" class="flex-1 py-1.5 rounded-md bg-emerald-900/70 hover:bg-emerald-800 border border-emerald-700 text-emerald-200 text-[11px] font-mono transition">Save Map</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+
+  <script type="module" src="/src/settingsMain.js"></script>
+</body>
+</html>

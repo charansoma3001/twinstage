@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.DS_Store
+__pycache__/
+*.pyc
+.venv/
+.env
+# Measured per rig; the drivers fall back to an identity map without them.
+drivers/joint_map.json
+drivers/joint_map_leader.json

@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Twinstage</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col">
+
+  <!-- TOP BAR -->
+  <header class="h-20 px-8 flex items-center justify-between shrink-0 relative z-30">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-white/80 border border-white flex items-center justify-center shadow-sm">
+        <span class="w-4 h-4 rounded-full bg-ember ring-4 ring-ember/20"></span>
+      </div>
+      <span class="text-[17px] font-semibold tracking-tight">Twinstage</span>
+      <span id="presenter-event" class="pill hidden"></span>
+      <span id="presenter-name" class="ml-1 pl-4 border-l border-ink/10 text-[17px] font-semibold tracking-tight whitespace-nowrap hidden"></span>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <div class="segment" id="mode-switch">
+        <button class="pill" data-mode="teleop">Teleop <span class="count">1</span></button>
+        <button class="pill" data-mode="hands">Hands <span class="count">2</span></button>
+      </div>
+      <div class="segment" id="view-switch">
+        <button class="pill is-on" data-view="arms">Arms</button>
+        <button class="pill" data-view="base">Base</button>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <span class="pill !h-9 !px-3 text-sm"><span class="dot" id="st-leader"></span>Leader</span>
+      <span class="pill !h-9 !px-3 text-sm"><span class="dot" id="st-follower"></span>Follower</span>
+      <span class="pill !h-9 !px-3 text-sm"><span class="dot" id="st-base"></span>Base</span>
+      <a href="/settings" class="pill !w-10 !h-10 !px-0 justify-center" title="Settings: calibration, cameras, joint maps">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      </a>
+      <button id="btn-stop" class="stop ml-1" title="Freeze both arms where they are and stop the base (Esc)">STOP</button>
+    </div>
+  </header>
+
+  <!-- Countdown / refusal toast -->
+  <div id="toast" class="hidden fixed top-24 left-1/2 -translate-x-1/2 z-40 card px-6 py-4 flex items-center gap-4">
+    <span id="toast-count" class="text-4xl font-light text-ember tabular-nums"></span>
+    <span id="toast-text" class="text-lg font-medium"></span>
+  </div>
+
+  <main class="flex-1 min-h-0 grid grid-cols-[27rem_1fr] gap-6 px-8 pb-6">
+
+    <!-- LEFT: cameras + explainer -->
+    <aside class="min-h-0 flex flex-col">
+      <div class="slot" id="slot-hands"><div class="slot-inner"><div class="card p-4">
+        <div class="flex items-center justify-between px-1">
+          <div>
+            <div class="text-lg font-medium">Hand camera</div>
+            <div class="text-sm text-ink-40" id="hands-sub">Top-down, both hands</div>
+          </div>
+          <span class="tag" id="hands-tag" data-tone="off">Starting</span>
+        </div>
+        <div class="relative mt-3 aspect-[4/3] rounded-2xl overflow-hidden bg-ink/5">
+          <video id="hands-video" class="hidden" playsinline muted></video>
+          <canvas id="hands-canvas" class="absolute inset-0 w-full h-full"></canvas>
+          <div id="hands-error" class="hidden absolute inset-0 flex items-center justify-center text-center p-6 text-sm text-ink-60"></div>
+        </div>
+      </div></div></div>
+
+      <div class="slot" id="slot-follower"><div class="slot-inner"><div class="card p-4">
+        <div class="flex items-center justify-between px-1">
+          <div>
+            <div class="text-lg font-medium">Follower view</div>
+            <div class="text-sm text-ink-40">Camera on the follower</div>
+          </div>
+          <span class="tag" id="follower-cam-tag" data-tone="off">Starting</span>
+        </div>
+        <div class="relative mt-3 aspect-video rounded-2xl overflow-hidden bg-ink/5">
+          <!-- Mounted upside down on the follower; turned the right way up here. -->
+          <video id="follower-video" class="absolute inset-0 w-full h-full object-cover rotate-180" playsinline muted autoplay></video>
+          <div id="follower-error" class="hidden absolute inset-0 flex items-center justify-center text-center p-6 text-sm text-ink-60"></div>
+        </div>
+      </div></div></div>
+
+      <div class="card p-5 flex-1 min-h-0">
+        <div class="eyebrow">What you're seeing</div>
+        <div class="text-2xl font-light mt-2 leading-snug" id="explain-title">Move the leader, the follower copies it.</div>
+        <p class="text-[15px] text-ink-60 mt-3 leading-relaxed" id="explain-body">The leader arm has its motors switched off. Its joints are read fifty times a second and sent to the follower, which moves to match.</p>
+      </div>
+    </aside>
+
+    <!-- CENTRE: twin + overlays -->
+    <section class="relative min-h-0 min-w-0">
+      <div id="stage-canvas" class="absolute inset-0"></div>
+
+      <!-- Title block -->
+      <div class="absolute top-2 left-2 z-10 pointer-events-none">
+        <div class="text-[15px] text-ink-60"><span id="crumb-a">SO-101 pair</span> · <b class="font-semibold text-ink" id="crumb-b">Leader &amp; follower</b></div>
+        <h1 id="stage-title" class="text-[88px] leading-[0.95] font-light tracking-tight mt-2">Teleoperation</h1>
+        <div class="flex gap-2 mt-5 pointer-events-auto" id="subtitle-tags">
+          <span class="tag" data-tone="ok" id="mode-tag">Idle</span>
+          <span class="tag hidden" id="mode-note-tag"></span>
+        </div>
+      </div>
+
+      <!-- Floating cards (arms view): leader grip left, QR + follower grip right -->
+      <div id="float-cards">
+        <div class="grip-card absolute top-[11.5rem] left-4 z-10 w-72 rounded-[22px] p-5 text-ink shadow-2xl"
+             style="background: linear-gradient(160deg, rgba(254,190,66,0.95), rgba(255,214,120,0.8)); backdrop-filter: blur(8px);">
+          <div class="flex items-center justify-between">
+            <div class="text-lg font-medium">Leader grip</div>
+            <span class="text-xs opacity-70" data-grip-source="leader">live</span>
+          </div>
+          <div class="text-sm opacity-70 -mt-0.5" data-grip-caption="leader">Handle</div>
+          <div class="flex items-baseline gap-1 mt-3">
+            <span data-grip-val="leader" class="text-[64px] leading-none font-light tabular-nums">0</span>
+            <span class="text-xl opacity-70">%</span>
+          </div>
+          <div class="ticks ticks-dark mt-4" data-grip-ticks="leader"></div>
+          <div class="flex justify-between text-xs opacity-70 mt-1.5"><span>Closed</span><span>Open</span></div>
+        </div>
+
+        <!-- Presenter card: filled from VITE_PRESENTER_* at build time, hidden when unset -->
+        <div id="presenter-card" class="card absolute top-2 right-4 z-10 w-72 p-3 flex items-center gap-3 hidden">
+          <img id="presenter-qr" alt="" class="w-24 h-24 rounded-xl bg-white p-1 shrink-0 hidden">
+          <div class="leading-tight">
+            <div class="eyebrow !text-[10px]">Connect with me</div>
+            <div id="presenter-card-name" class="text-lg font-medium mt-1"></div>
+            <div id="presenter-caption" class="text-sm text-ink-60 mt-0.5"></div>
+          </div>
+        </div>
+
+        <div class="grip-card absolute top-[11.5rem] right-4 z-10 w-72 rounded-[22px] p-5 text-white shadow-2xl"
+             style="background: linear-gradient(160deg, rgba(254,94,14,0.92), rgba(254,140,60,0.78)); backdrop-filter: blur(8px);">
+          <div class="flex items-center justify-between">
+            <div class="text-lg font-medium">Follower grip</div>
+            <span class="text-xs opacity-80" data-grip-source="follower">live</span>
+          </div>
+          <div class="text-sm opacity-80 -mt-0.5">Jaw aperture</div>
+          <div class="flex items-baseline gap-1 mt-3">
+            <span data-grip-val="follower" class="text-[64px] leading-none font-light tabular-nums">0</span>
+            <span class="text-xl opacity-80">%</span>
+          </div>
+          <div class="ticks mt-4" data-grip-ticks="follower"></div>
+          <div class="flex justify-between text-xs opacity-80 mt-1.5"><span>Closed</span><span>Open</span></div>
+        </div>
+      </div>
+
+      <!-- Bottom cards: arms view -->
+      <div id="arm-cards" class="absolute left-0 right-0 bottom-0 z-10 grid grid-cols-4 gap-4">
+        <div class="card p-5" data-arm-card="leader">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <span class="w-3 h-3 rounded-full bg-sun"></span>
+              <span class="text-xl font-medium">Leader</span>
+              <span class="tag" data-role="state">Offline</span>
+            </div>
+            <span class="text-sm text-ink-40 hidden 2xl:inline" data-role="side">Left hand</span>
+          </div>
+          <div class="mt-4 space-y-2 text-sun" data-role="joints"></div>
+        </div>
+        <div class="card p-5" data-arm-card="follower">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <span class="w-3 h-3 rounded-full bg-ember"></span>
+              <span class="text-xl font-medium">Follower</span>
+              <span class="tag" data-role="state">Offline</span>
+            </div>
+            <span class="text-sm text-ink-40 hidden 2xl:inline" data-role="side">Right hand</span>
+          </div>
+          <div class="mt-4 space-y-2 text-ember" data-role="joints"></div>
+        </div>
+        <div class="card p-5 flex flex-col">
+          <div class="flex items-center justify-between">
+            <span class="text-xl font-medium">Hands</span>
+            <button id="btn-swap" class="pill !h-8 !px-3 text-sm" title="Swap which hand drives which arm">Swap</button>
+          </div>
+          <div class="segment mt-3 self-start" id="hands-arms">
+            <button class="pill !h-7 !px-3 text-sm" data-arms="follower" title="One hand drives the follower; the leader holds still">Follower</button>
+            <button class="pill !h-7 !px-3 text-sm is-on" data-arms="both">Both</button>
+          </div>
+          <div class="grid grid-cols-2 gap-3 mt-3 flex-1">
+            <div class="rounded-2xl bg-white/70 p-3 flex flex-col justify-between" id="hand-slot-left">
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-ink-60">Left hand</span>
+                <span class="dot" data-role="seen"></span>
+              </div>
+              <div>
+                <div class="text-2xl font-light" data-role="arm">Leader</div>
+                <div class="text-xs text-ink-40 mt-0.5" data-role="detail">not in view</div>
+              </div>
+            </div>
+            <div class="rounded-2xl bg-white/70 p-3 flex flex-col justify-between" id="hand-slot-right">
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-ink-60">Right hand</span>
+                <span class="dot" data-role="seen"></span>
+              </div>
+              <div>
+                <div class="text-2xl font-light" data-role="arm">Follower</div>
+                <div class="text-xs text-ink-40 mt-0.5" data-role="detail">not in view</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card p-5 flex flex-col" id="prim-card">
+          <div class="flex items-center justify-between">
+            <span class="text-lg 2xl:text-xl font-medium whitespace-nowrap">Task primitives</span>
+            <span class="tag max-w-[55%] overflow-hidden" id="prim-tag" data-tone="off">Off</span>
+          </div>
+          <div class="segment mt-4 self-start" id="prim-arms">
+            <button class="pill !h-8 !px-3 text-sm" data-arms="leader">Leader</button>
+            <button class="pill !h-8 !px-3 text-sm" data-arms="follower">Follower</button>
+            <button class="pill !h-8 !px-3 text-sm is-on" data-arms="both">Both</button>
+          </div>
+          <div class="grid grid-cols-2 gap-2 mt-3 flex-1" id="prim-buttons">
+            <button class="prim-btn" data-prim="rest"><span class="prim-ico">&#8962;</span>Rest</button>
+            <button class="prim-btn" data-prim="pickAndPlace"><span class="prim-ico">&#8615;</span>Pick &amp; place</button>
+            <button class="prim-btn" data-prim="pinchTest"><span class="prim-ico">&#10070;</span>Precision pinch</button>
+            <button class="prim-btn" data-prim="waveScan"><span class="prim-ico">&#8767;</span>Waveform scan</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom cards: base view -->
+      <div id="base-hud" class="hidden absolute left-0 right-0 bottom-0 z-10 grid grid-cols-3 gap-4">
+        <div class="card p-5">
+          <div class="flex items-center gap-2.5">
+            <span class="dot" id="base-dot"></span>
+            <span class="text-xl font-medium">LeKiwi base</span>
+            <span class="text-sm text-ink-60" id="base-status">Bridge offline</span>
+          </div>
+          <div class="mt-4 text-[15px] tabular-nums" id="base-vel">0.00 fwd  0.00 left  m/s   0°/s</div>
+          <div class="mt-1 text-sm text-ink-40 tabular-nums" id="base-odom">0.00 m from start   heading 0°</div>
+          <div class="flex items-center gap-2 mt-4">
+            <div class="segment" id="base-speed">
+              <button data-s="0.4" class="pill">Slow</button>
+              <button data-s="0.7" class="pill is-on">Medium</button>
+              <button data-s="1" class="pill">Fast</button>
+            </div>
+            <button id="base-reset" class="pill" title="Reset odometry and trail">Reset</button>
+            <button id="base-stop" class="stop !h-10 !px-4" title="Stop the base (Space or Esc)">STOP</button>
+          </div>
+        </div>
+        <div class="card p-5" id="base-keys">
+          <div class="text-xl font-medium">Keyboard</div>
+          <div class="flex items-center gap-6 mt-4">
+            <div class="grid grid-cols-3 gap-1.5 text-center">
+              <span></span><kbd data-key="ArrowUp" class="base-key">&uarr;</kbd><span></span>
+              <kbd data-key="ArrowLeft" class="base-key">&larr;</kbd><kbd data-key="ArrowDown" class="base-key">&darr;</kbd><kbd data-key="ArrowRight" class="base-key">&rarr;</kbd>
+            </div>
+            <div class="space-y-1.5 text-sm text-ink-60">
+              <div><b class="text-ink">&uarr; &darr;</b> forward / back</div>
+              <div><b class="text-ink">&larr; &rarr;</b> turn</div>
+              <div><kbd data-key="KeyA" class="base-key !h-6 !min-w-6">A</kbd> <kbd data-key="KeyD" class="base-key !h-6 !min-w-6">D</kbd> strafe</div>
+              <div><b class="text-ink">Space</b> stop</div>
+            </div>
+          </div>
+        </div>
+        <div class="card p-5">
+          <div class="text-xl font-medium">Drive from your phone</div>
+          <p class="text-sm text-ink-60 mt-2">Join the same Wi-Fi as this laptop, then open:</p>
+          <div class="mt-3 space-y-1.5" id="phone-urls"><span class="text-ink-40 text-sm">waiting for the bridge…</span></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script type="module" src="/src/stage/main.js"></script>
+</body>
+</html>
