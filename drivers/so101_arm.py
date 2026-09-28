@@ -300,7 +300,7 @@ def main() -> int:
         present={k: round(v, 1) for k, v in present.items()},
     )
     if mapped_default:
-        emit(type="log", msg="joint_map.json missing - using an identity map. Run drivers/jog.py first.")
+        emit(type="log", msg=f"{MAP_PATH.name} missing - using an identity map. Measure it in Settings, Joint map.")
 
     reader = StdinReader()
     if args.start_relaxed:
