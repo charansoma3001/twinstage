@@ -20,8 +20,9 @@ import { createLandmarker, toLegacy } from "./handModel.js";
    shape, so calibration, retargeting and hand assignment did not change.
    ========================================================================= */
 export function createHandTracker({ numHands, onResults }) {
-  const tracker = { delegate: null, inferMs: 0, error: null, ready: null, send };
+  const tracker = { delegate: null, inferMs: 0, error: null, ready: null, send, close };
   let landmarker = null;
+  let closed = false;
   let lastTs = 0;
   let warm = 0;
 
@@ -30,6 +31,11 @@ export function createHandTracker({ numHands, onResults }) {
     model: new URL(`${BASE_URL}mediapipe/hand_landmarker.task`, location.origin).href,
     numHands
   }).then((made) => {
+    // Closed while it was still loading: free it straight away.
+    if (closed) {
+      made.landmarker.close();
+      return made.delegate;
+    }
     landmarker = made.landmarker;
     tracker.delegate = made.delegate;
     return made.delegate;
@@ -52,6 +58,13 @@ export function createHandTracker({ numHands, onResults }) {
     }
     onResults(toLegacy(result));
     return true;
+  }
+
+  /* Frees the model and its GPU context; the tracker is dead afterwards. */
+  function close() {
+    closed = true;
+    if (landmarker) landmarker.close();
+    landmarker = null;
   }
 
   return tracker;

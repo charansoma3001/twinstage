@@ -6,6 +6,15 @@
   html { font-size: 90%; }
 }
 
+/* The camera column: just its button until opened. */
+@media (min-width: 1024px) {
+  #cams[data-open="true"] { width: 27rem; }
+  #cams[data-open="false"] #cams-body,
+  #cams[data-open="false"] .cams-label { display: none; }
+}
+.cams-chevron { transition: transform 0.2s ease; }
+#cams[data-open="true"] .cams-chevron { transform: rotate(180deg); }
+
 /* Camera cards: a card leaving fades out to the left while its slot folds
    away, so the card below slides up into its place. */
 .slot {

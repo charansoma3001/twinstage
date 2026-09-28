@@ -10,6 +10,7 @@ const KEY = "twinstage:stage:v1";
 const DEFAULTS = {
   handsCameraId: "",
   followerCameraId: "",
+  camerasOpen: false,     // the stage's camera column, folded away by default
   leaderSide: "left",     // which half of the calibrated area, and which hand, drives the leader
   flipLabels: false,      // MediaPipe labels assume a selfie view; top-down can read them swapped
   armSpacingCm: 30,       // centre to centre of the two arms' bases, measured on the table

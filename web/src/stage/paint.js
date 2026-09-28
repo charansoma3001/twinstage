@@ -171,6 +171,7 @@ export function paintCards() {
   const ht = el("hands-tag");
   if (hands.error) { ht.textContent = "Camera error"; ht.dataset.tone = "bad"; }
   else if (!hands.running) { ht.textContent = "Starting"; ht.dataset.tone = "warn"; }
+  else if (hands.model === "off") { ht.textContent = "Model not loaded"; ht.dataset.tone = "off"; }
   else if (!hands.fps) { ht.textContent = "Loading model"; ht.dataset.tone = "warn"; }
   else {
     ht.textContent = `${hands.fps} fps · ${Math.round(hands.inferMs)} ms`;
@@ -179,6 +180,7 @@ export function paintCards() {
   const c = hands.capture;
   ht.title = c ? `Camera ${c.width}×${c.height} at ${Math.round(c.frameRate || 0)} fps · ${hands.delegate || "loading"} · ` +
     `tracking ${hands.fps} fps, ${Math.round(hands.inferMs)} ms per frame` : "";
+  el("btn-hand-model").textContent = hands.model === "off" ? "Load" : "Unload";
   el("hands-error").classList.toggle("hidden", !hands.error);
   if (hands.error) el("hands-error").textContent = hands.error;
 
@@ -223,7 +225,7 @@ export function paintMode() {
   const handsAway = S.view === "arms" && (S.mode === "teleop" || S.mode === "primitive");
   el("slot-hands").classList.toggle("is-away", handsAway);
   setDetecting(!handsAway);
-  setTrackingRender(!handsAway);
+  setTrackingRender(!handsAway && hands.model !== "off");
 }
 
 /* ---------------------------------------------------------------------- */

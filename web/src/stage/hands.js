@@ -27,6 +27,7 @@ export const hands = {
   fps: 0,
   inferMs: 0,        // frame grab -> results, smoothed
   delegate: null,    // "GPU" or "CPU", whichever loaded
+  model: "off",      // "off" | "loading" | "on": loaded for hands mode, not with the page
   capture: null,     // what the camera actually delivers: { width, height, frameRate }
   // arm -> { cart, pinch, heightPct, side, label, at } for the latest detection
   byArm: { leader: null, follower: null }
@@ -41,8 +42,9 @@ let prefs = { leaderSide: "left", flipLabels: false };
 let lastResults = null;
 let frames = 0, fpsT = performance.now();
 
-/* Hidden hand camera: keep the model loaded and the camera open, so coming
-   back is instant, but stop running inference and drawing frames nobody sees. */
+/* Folded-away hand camera: keep the model loaded and the camera open, so
+   coming back is instant, but stop running inference and drawing frames
+   nobody sees. */
 let detecting = true;
 export function setDetecting(on) {
   detecting = on;
@@ -247,16 +249,27 @@ function pump(gen) {
   requestAnimationFrame(() => pump(gen));
 }
 
+/* The camera and the model are separate: the picture can show with no model
+   loaded, and the model (about 10 MB and a GPU context) loads only for
+   hands mode. */
+let opening = 0;
 export async function startHands(videoEl, canvasEl, cameraId) {
   video = videoEl;
   canvas = canvasEl;
   ctx = canvas.getContext("2d");
   hands.error = null;
+  const mine = ++opening;
   try {
     // 640x480: the size /settings calibrates at, so the corners mean the same
     // pixels here (a 16:9 request can make the camera crop its sensor
     // differently). Speed is the same at 1280x720 (measured).
-    stream = await openCamera(cameraId, { width: 640, height: 480, frameRate: 60 });
+    const s = await openCamera(cameraId, { width: 640, height: 480, frameRate: 60 });
+    // Stopped while the camera was still opening.
+    if (mine !== opening) {
+      s.getTracks().forEach((t) => t.stop());
+      return;
+    }
+    stream = s;
     const st = stream.getVideoTracks()[0]?.getSettings?.() || {};
     hands.capture = { width: st.width, height: st.height, frameRate: st.frameRate };
     console.info("Hand camera:", hands.capture);
@@ -264,25 +277,52 @@ export async function startHands(videoEl, canvasEl, cameraId) {
     await video.play();
     hands.running = true;
     const gen = ++generation;
-    requestAnimationFrame(() => pump(gen));   // the picture comes up before the model does
-    // One tracker for the page's lifetime: switching cameras reuses it.
-    if (!tracker) tracker = createHandTracker({ numHands: 2, onResults });
-    hands.delegate = await tracker.ready;
-    console.info("Hand tracking on", hands.delegate);
+    requestAnimationFrame(() => pump(gen));
   } catch (err) {
+    if (mine !== opening) return;
     hands.error = err.message || String(err);
     console.error("Hand camera failed:", err);
   }
 }
 
-function stopHands() {
+export function stopHands() {
+  opening++;
   hands.running = false;
   if (stream) stream.getTracks().forEach((t) => t.stop());
   stream = null;
+  lastResults = null;
+}
+
+/* Switching cameras keeps the model: the tracker outlives the stream. */
+export async function loadHandModel() {
+  if (tracker) return;
+  const t = (tracker = createHandTracker({ numHands: 2, onResults }));
+  hands.model = "loading";
+  try {
+    const delegate = await t.ready;
+    if (tracker !== t) return;   // unloaded while it loaded
+    hands.delegate = delegate;
+    hands.model = "on";
+    console.info("Hand tracking on", delegate);
+  } catch (err) {
+    if (tracker !== t) return;
+    tracker = null;
+    hands.model = "off";
+    hands.error = `Hand model failed: ${err.message || err}`;
+    console.error("Hand model failed:", err);
+  }
+}
+
+export function unloadHandModel() {
+  if (!tracker) return;
+  tracker.close();
+  tracker = null;
+  Object.assign(hands, { model: "off", delegate: null, fps: 0, inferMs: 0 });
+  hands.byArm.leader = hands.byArm.follower = null;
+  lastResults = null;
 }
 
 export async function restartHands(cameraId) {
   stopHands();
-  lastResults = null;
   await startHands(video, canvas, cameraId);
 }

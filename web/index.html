@@ -52,10 +52,17 @@
     <span id="toast-text" class="text-lg font-medium"></span>
   </div>
 
-  <main class="flex flex-col gap-4 px-4 pb-6 lg:flex-1 lg:min-h-0 lg:grid lg:grid-cols-[27rem_1fr] lg:gap-6 lg:px-8">
+  <main class="flex flex-col gap-4 px-4 pb-6 lg:flex-1 lg:min-h-0 lg:grid lg:grid-cols-[auto_1fr] lg:gap-6 lg:px-8">
 
-    <!-- LEFT: cameras, big-screen only; a phone never opens a camera -->
-    <aside class="hidden lg:flex min-h-0 flex-col">
+    <!-- LEFT: cameras, folded behind a button until asked for, and big-screen
+         only: a phone never opens a camera -->
+    <aside id="cams" class="hidden lg:flex min-h-0 flex-col" data-open="false">
+      <button id="btn-cams" class="pill self-start !h-10 mb-3" aria-expanded="false" aria-controls="cams-body">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+        <span class="cams-label">Cameras</span>
+        <svg class="cams-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+      <div id="cams-body" class="min-h-0 flex flex-col">
       <div class="slot" id="slot-hands"><div class="slot-inner"><div class="card p-4">
         <div class="flex items-center justify-between px-1">
           <div>
@@ -85,6 +92,7 @@
           <div id="follower-error" class="hidden absolute inset-0 flex items-center justify-center text-center p-6 text-sm text-ink-60"></div>
         </div>
       </div></div></div>
+      </div>
     </aside>
 
     <!-- CENTRE: twin + overlays -->
@@ -171,7 +179,10 @@
         <div class="card p-5 flex flex-col">
           <div class="flex items-center justify-between">
             <span class="text-xl font-medium">Hands</span>
-            <button id="btn-swap" class="pill !h-8 !px-3 text-sm" title="Swap which hand drives which arm">Swap</button>
+            <div class="flex gap-1.5">
+              <button id="btn-hand-model" class="pill !h-8 !px-3 text-sm !hidden lg:!inline-flex" title="The hand model loads when you choose Hands; unload it to free the GPU">Load</button>
+              <button id="btn-swap" class="pill !h-8 !px-3 text-sm" title="Swap which hand drives which arm">Swap</button>
+            </div>
           </div>
           <div class="segment mt-3 self-start" id="hands-arms">
             <button class="pill !h-7 !px-3 text-sm" data-arms="follower" title="One hand drives the follower; the leader holds still">Follower</button>

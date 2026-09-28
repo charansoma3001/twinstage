@@ -3,7 +3,7 @@ import "./stage.css";
 import { loadCalibration } from "../persist.js";
 import { savePrefs, onPrefsChange, openCamera } from "../prefs.js";
 import * as twin from "./twin.js";
-import { startHands, restartHands, setHandPrefs } from "./hands.js";
+import { hands, startHands, stopHands, restartHands, loadHandModel, unloadHandModel, setHandPrefs } from "./hands.js";
 import { baseScene, baseCamera, initBaseTwin, setBaseActive, isBaseActive, updateBaseTwin } from "../baseTwin.js";
 import { S, ARMS, el, link } from "./state.js";
 import { renderer, container, resize } from "./view.js";
@@ -70,41 +70,74 @@ function stopEverything() {
   link.send({ cmd: "base_stop" });
 }
 
-// Same breakpoint as the stylesheet's lg: below it the camera cards are not
-// shown, so a phone is never asked for its camera.
+/* ---------------------------------------------------------------------- */
+/* Cameras and the hand model. The camera column is folded away until asked
+   for; the hand model loads on the way into hands mode (or from its button)
+   and not with the page. Below lg, the stylesheet's breakpoint, there is no
+   camera column, so a phone is never asked for its camera. */
 const wide = matchMedia("(min-width: 1024px)");
-let camerasOn = false;
+let modelWanted = false;
+const running = { hands: false, follower: false };
 
-function startCamerasWhenShown() {
-  if (wide.matches) {
-    camerasOn = true;
-    startCameras();
-    return;
+function syncCameras() {
+  const open = wide.matches && S.prefs.camerasOpen;
+  const want = { hands: wide.matches && (open || modelWanted), follower: open };
+  if (want.hands !== running.hands) {
+    running.hands = want.hands;
+    if (want.hands) startHands(el("hands-video"), el("hands-canvas"), S.prefs.handsCameraId);
+    else stopHands();
   }
-  wide.addEventListener("change", function grown() {
-    if (!wide.matches) return;
-    wide.removeEventListener("change", grown);
-    startCamerasWhenShown();
-  });
+  if (want.follower !== running.follower) {
+    running.follower = want.follower;
+    if (want.follower) startFollowerCamera();
+    else stopFollowerCamera();
+  }
+  if (wide.matches && modelWanted) loadHandModel();
+  else unloadHandModel();
+  const cams = el("cams");
+  cams.dataset.open = String(open);
+  el("btn-cams").setAttribute("aria-expanded", String(open));
+  el("btn-cams").title = open ? "Hide the cameras" : "Show the cameras";
+  paintMode();
 }
 
-async function startCameras() {
-  setHandPrefs({ leaderSide: S.prefs.leaderSide, flipLabels: S.prefs.flipLabels });
-  await startHands(el("hands-video"), el("hands-canvas"), S.prefs.handsCameraId);
+function setCamerasOpen(open) {
+  S.prefs = savePrefs({ camerasOpen: open });
+  syncCameras();
+}
+
+let followerOpening = 0;
+async function startFollowerCamera() {
+  const mine = ++followerOpening;
   const fv = el("follower-video");
   const ft = el("follower-cam-tag");
+  ft.textContent = "Starting";
+  ft.dataset.tone = "warn";
   try {
-    if (fv.srcObject) fv.srcObject.getTracks().forEach((t) => t.stop());
-    fv.srcObject = await openCamera(S.prefs.followerCameraId);
+    const stream = await openCamera(S.prefs.followerCameraId);
+    // Folded away while it was opening.
+    if (mine !== followerOpening) {
+      stream.getTracks().forEach((t) => t.stop());
+      return;
+    }
+    fv.srcObject = stream;
     ft.textContent = "Live";
     ft.dataset.tone = "ok";
     el("follower-error").classList.add("hidden");
   } catch (err) {
+    if (mine !== followerOpening) return;
     ft.textContent = "No camera";
     ft.dataset.tone = "bad";
     el("follower-error").textContent = err.message;
     el("follower-error").classList.remove("hidden");
   }
+}
+
+function stopFollowerCamera() {
+  followerOpening++;
+  const fv = el("follower-video");
+  if (fv.srcObject) fv.srcObject.getTracks().forEach((t) => t.stop());
+  fv.srcObject = null;
 }
 
 async function boot() {
@@ -140,6 +173,13 @@ async function boot() {
       for (const x of document.querySelectorAll("#hands-arms [data-arms]")) x.classList.toggle("is-on", x === b);
     });
   }
+  el("btn-cams").addEventListener("click", () => setCamerasOpen(!S.prefs.camerasOpen));
+  el("btn-hand-model").addEventListener("click", () => {
+    modelWanted = hands.model === "off";
+    // Loading it is for tracking, and tracking is worth watching.
+    if (modelWanted && !S.prefs.camerasOpen) setCamerasOpen(true);
+    else syncCameras();
+  });
   el("btn-swap").addEventListener("click", () => {
     S.prefs = savePrefs({ leaderSide: S.prefs.leaderSide === "left" ? "right" : "left" });
     setHandPrefs({ leaderSide: S.prefs.leaderSide });
@@ -149,20 +189,30 @@ async function boot() {
   // Settings open in another tab: camera, hand and calibration changes land
   // here without a reload.
   onPrefsChange((p) => {
-    const camsChanged = p.handsCameraId !== S.prefs.handsCameraId || p.followerCameraId !== S.prefs.followerCameraId;
+    const was = S.prefs;
     S.prefs = p;
     setHandPrefs({ leaderSide: p.leaderSide, flipLabels: p.flipLabels });
     twin.setLayout(p.leaderSide, p.armSpacingCm / 100);
-    if (camsChanged && camerasOn) {
-      restartHands(p.handsCameraId);
-      startCameras();
-    }
+    if (running.hands && p.handsCameraId !== was.handsCameraId) restartHands(p.handsCameraId);
+    if (running.follower && p.followerCameraId !== was.followerCameraId) startFollowerCamera();
+    if (p.camerasOpen !== was.camerasOpen) syncCameras();
   });
   window.addEventListener("storage", (ev) => {
     if (ev.key && ev.key.includes(":calibration:")) loadCalibration();
   });
 
   link.onMessage(onMessage);
+  // Into hands mode, from any page or the bridge's hello: load the model.
+  let lastMode = S.mode;
+  link.onMessage((msg) => {
+    if (msg.type !== "mode" && msg.type !== "hello") return;
+    if (S.mode === "hands" && lastMode !== "hands" && !modelWanted) {
+      modelWanted = true;
+      if (wide.matches && !S.prefs.camerasOpen) setCamerasOpen(true);
+      else syncCameras();
+    }
+    lastMode = S.mode;
+  });
   link.onClose(onLinkDrop);
   link.onOpen(() => loadMaps());
   // Before connecting, so the base twin hears the bridge's hello too.
@@ -174,7 +224,9 @@ async function boot() {
   paintMode();
   setInterval(paintCards, 100);
   requestAnimationFrame(frame);
-  startCamerasWhenShown();
+  setHandPrefs({ leaderSide: S.prefs.leaderSide, flipLabels: S.prefs.flipLabels });
+  wide.addEventListener("change", syncCameras);
+  syncCameras();
 }
 
 boot().catch((err) => {
