@@ -21,6 +21,10 @@ const URDF_URL = "urdf/LeKiwi/LeKiwi.urdf";   // under BASE_URL
 // Wheel centre is 17.9 mm above the URDF root; the omniwheel is 101.6 mm across.
 const FLOOR_OFFSET = 0.0508 - 0.0179;
 const WHEEL_JOINTS = ["base_left_wheel", "base_back_wheel", "base_right_wheel"];
+// The driver's wheel angles follow LeRobot's motor convention; the URDF's
+// wheel joints turn the other way for a positive angle, so the twin negates
+// them to roll the way the base moves (checked in test/baseWheels.test.js).
+export const WHEEL_SPIN_SIGN = -1;
 const SEND_MS = 50;
 const TRAIL_POINTS = 600;
 
@@ -144,7 +148,7 @@ function setPoseFromOdom() {
   const [x, y, thDeg] = shown.pose;
   baseGroup.position.set(y, 0, x);
   baseGroup.rotation.y = THREE.MathUtils.degToRad(thDeg);
-  if (model) WHEEL_JOINTS.forEach((j, i) => model.joints[j]?.setValue(shown.wheels[i]));
+  if (model) WHEEL_JOINTS.forEach((j, i) => model.joints[j]?.setValue(WHEEL_SPIN_SIGN * shown.wheels[i]));
 
   // Grid follows on whole cells, so its lines stay put under the base.
   floorGroup.position.set(Math.round(y / CELL) * CELL, 0, Math.round(x / CELL) * CELL);
