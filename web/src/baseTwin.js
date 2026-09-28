@@ -266,6 +266,25 @@ function initHud() {
     odom: document.getElementById("base-odom"),
     keyEls: Array.from(document.querySelectorAll("#base-keys [data-key]"))
   };
+  // The drawn keys hold like real ones, so a phone can drive without a keyboard.
+  for (const k of hud.keyEls) {
+    if (!DRIVE_KEYS.has(k.dataset.key)) continue;
+    k.addEventListener("pointerdown", (ev) => {
+      if (!state.active) return;
+      ev.preventDefault();
+      keys.add(k.dataset.key);
+      renderKeys();
+      // So a finger sliding off the key still lets go of it.
+      try { k.setPointerCapture(ev.pointerId); } catch { /* not an active pointer */ }
+    });
+    const release = () => {
+      keys.delete(k.dataset.key);
+      renderKeys();
+    };
+    k.addEventListener("pointerup", release);
+    k.addEventListener("pointercancel", release);
+    k.addEventListener("lostpointercapture", release);
+  }
   document.getElementById("base-stop").addEventListener("click", stopBase);
   document.getElementById("base-reset").addEventListener("click", () => {
     sendCommand({ cmd: "base_reset_odom" });

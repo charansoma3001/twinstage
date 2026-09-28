@@ -70,6 +70,24 @@ function stopEverything() {
   link.send({ cmd: "base_stop" });
 }
 
+// Same breakpoint as the stylesheet's lg: below it the camera cards are not
+// shown, so a phone is never asked for its camera.
+const wide = matchMedia("(min-width: 1024px)");
+let camerasOn = false;
+
+function startCamerasWhenShown() {
+  if (wide.matches) {
+    camerasOn = true;
+    startCameras();
+    return;
+  }
+  wide.addEventListener("change", function grown() {
+    if (!wide.matches) return;
+    wide.removeEventListener("change", grown);
+    startCamerasWhenShown();
+  });
+}
+
 async function startCameras() {
   setHandPrefs({ leaderSide: S.prefs.leaderSide, flipLabels: S.prefs.flipLabels });
   await startHands(el("hands-video"), el("hands-canvas"), S.prefs.handsCameraId);
@@ -135,7 +153,7 @@ async function boot() {
     S.prefs = p;
     setHandPrefs({ leaderSide: p.leaderSide, flipLabels: p.flipLabels });
     twin.setLayout(p.leaderSide, p.armSpacingCm / 100);
-    if (camsChanged) {
+    if (camsChanged && camerasOn) {
       restartHands(p.handsCameraId);
       startCameras();
     }
@@ -156,7 +174,7 @@ async function boot() {
   paintMode();
   setInterval(paintCards, 100);
   requestAnimationFrame(frame);
-  startCameras();
+  startCamerasWhenShown();
 }
 
 boot().catch((err) => {

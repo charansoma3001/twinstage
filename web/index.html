@@ -8,11 +8,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="h-screen w-screen overflow-hidden flex flex-col">
+<!-- Below lg the stage is one scrolling column: header rows, title, twin,
+     cards, then the cameras. From lg up it is the fixed big-screen layout. -->
+<body class="min-h-screen overflow-x-hidden flex flex-col lg:h-screen lg:w-screen lg:overflow-hidden">
 
   <!-- TOP BAR -->
-  <header class="h-20 px-8 flex items-center justify-between shrink-0 relative z-30">
-    <div class="flex items-center gap-3">
+  <header class="px-4 py-3 flex flex-wrap items-center gap-3 lg:h-20 lg:px-8 lg:py-0 lg:flex-nowrap lg:justify-between shrink-0 relative z-30">
+    <div class="flex items-center gap-3 mr-auto lg:mr-0 min-w-0">
       <div class="w-10 h-10 rounded-full bg-white/80 border border-white flex items-center justify-center shadow-sm">
         <span class="w-4 h-4 rounded-full bg-ember ring-4 ring-ember/20"></span>
       </div>
@@ -21,7 +23,7 @@
       <span id="presenter-name" class="ml-1 pl-4 border-l border-ink/10 text-[17px] font-semibold tracking-tight whitespace-nowrap hidden"></span>
     </div>
 
-    <div class="flex items-center gap-3">
+    <div class="order-1 w-full flex items-center justify-between gap-3 lg:order-none lg:w-auto lg:justify-start">
       <div class="segment" id="mode-switch">
         <button class="pill" data-mode="teleop">Teleop <span class="count">1</span></button>
         <button class="pill" data-mode="hands">Hands <span class="count">2</span></button>
@@ -32,27 +34,28 @@
       </div>
     </div>
 
-    <div class="flex items-center gap-2">
-      <span class="pill !h-9 !px-3 text-sm"><span class="dot" id="st-leader"></span>Leader</span>
-      <span class="pill !h-9 !px-3 text-sm"><span class="dot" id="st-follower"></span>Follower</span>
-      <span class="pill !h-9 !px-3 text-sm"><span class="dot" id="st-base"></span>Base</span>
+    <!-- contents below lg, so its items join the header's wrapping rows -->
+    <div class="contents lg:flex items-center gap-2" id="header-status">
+      <span class="pill !h-9 !px-3 text-sm !hidden lg:!inline-flex"><span class="dot" id="st-leader"></span>Leader</span>
+      <span class="pill !h-9 !px-3 text-sm !hidden lg:!inline-flex"><span class="dot" id="st-follower"></span>Follower</span>
+      <span class="pill !h-9 !px-3 text-sm !hidden lg:!inline-flex"><span class="dot" id="st-base"></span>Base</span>
       <a href="settings.html" class="pill !w-10 !h-10 !px-0 justify-center" title="Settings: calibration, cameras, joint maps">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
       </a>
-      <button id="btn-stop" class="stop ml-1" title="Freeze both arms where they are and stop the base (Esc)">STOP</button>
+      <button id="btn-stop" class="stop lg:ml-1" title="Freeze both arms where they are and stop the base (Esc)">STOP</button>
     </div>
   </header>
 
   <!-- Countdown / refusal toast -->
-  <div id="toast" class="hidden fixed top-24 left-1/2 -translate-x-1/2 z-40 card px-6 py-4 flex items-center gap-4">
+  <div id="toast" class="hidden fixed top-24 left-1/2 -translate-x-1/2 z-40 card px-6 py-4 flex items-center gap-4 w-max max-w-[calc(100vw-2rem)]">
     <span id="toast-count" class="text-4xl font-light text-ember tabular-nums"></span>
     <span id="toast-text" class="text-lg font-medium"></span>
   </div>
 
-  <main class="flex-1 min-h-0 grid grid-cols-[27rem_1fr] gap-6 px-8 pb-6">
+  <main class="flex flex-col gap-4 px-4 pb-6 lg:flex-1 lg:min-h-0 lg:grid lg:grid-cols-[27rem_1fr] lg:gap-6 lg:px-8">
 
-    <!-- LEFT: cameras + explainer -->
-    <aside class="min-h-0 flex flex-col">
+    <!-- LEFT: cameras + explainer, big-screen only: a phone never opens a camera -->
+    <aside class="hidden lg:flex min-h-0 flex-col">
       <div class="slot" id="slot-hands"><div class="slot-inner"><div class="card p-4">
         <div class="flex items-center justify-between px-1">
           <div>
@@ -91,22 +94,22 @@
     </aside>
 
     <!-- CENTRE: twin + overlays -->
-    <section class="relative min-h-0 min-w-0">
-      <div id="stage-canvas" class="absolute inset-0"></div>
+    <section class="relative min-h-0 min-w-0 flex flex-col gap-3 lg:block">
+      <div id="stage-canvas" class="relative h-[55svh] min-h-[20rem] max-h-[36rem] -mx-4 lg:mx-0 lg:h-auto lg:min-h-0 lg:max-h-none lg:absolute lg:inset-0"></div>
 
       <!-- Title block -->
-      <div class="absolute top-2 left-2 z-10 pointer-events-none">
+      <div class="order-first relative lg:absolute lg:top-2 lg:left-2 z-10 pointer-events-none">
         <div class="text-[15px] text-ink-60"><span id="crumb-a">SO-101 pair</span> · <b class="font-semibold text-ink" id="crumb-b">Leader &amp; follower</b></div>
-        <h1 id="stage-title" class="text-[88px] leading-[0.95] font-light tracking-tight mt-2">Teleoperation</h1>
-        <div class="flex gap-2 mt-5 pointer-events-auto" id="subtitle-tags">
+        <h1 id="stage-title" class="text-5xl lg:text-[88px] leading-[0.95] font-light tracking-tight mt-1 lg:mt-2">Teleoperation</h1>
+        <div class="flex gap-2 mt-3 lg:mt-5 pointer-events-auto" id="subtitle-tags">
           <span class="tag" data-tone="ok" id="mode-tag">Idle</span>
           <span class="tag hidden" id="mode-note-tag"></span>
         </div>
       </div>
 
       <!-- Floating cards (arms view): leader grip left, QR + follower grip right -->
-      <div id="float-cards">
-        <div class="grip-card absolute top-[11.5rem] left-4 z-10 w-72 rounded-[22px] p-5 text-ink shadow-2xl"
+      <div id="float-cards"><div class="grid grid-cols-2 gap-3 lg:block">
+        <div class="grip-card relative lg:absolute lg:top-[11.5rem] lg:left-4 z-10 lg:w-72 rounded-[22px] p-4 lg:p-5 text-ink shadow-2xl"
              style="background: linear-gradient(160deg, rgba(254,190,66,0.95), rgba(255,214,120,0.8)); backdrop-filter: blur(8px);">
           <div class="flex items-center justify-between">
             <div class="text-lg font-medium">Leader grip</div>
@@ -122,7 +125,7 @@
         </div>
 
         <!-- Presenter card: filled from VITE_PRESENTER_* at build time, hidden when unset -->
-        <div id="presenter-card" class="card absolute top-2 right-4 z-10 w-72 p-3 flex items-center gap-3 hidden">
+        <div id="presenter-card" class="card col-span-2 order-last relative lg:absolute lg:top-2 lg:right-4 z-10 lg:w-72 p-3 flex items-center gap-3 hidden">
           <img id="presenter-qr" alt="" class="w-24 h-24 rounded-xl bg-white p-1 shrink-0 hidden">
           <div class="leading-tight">
             <div class="eyebrow !text-[10px]">Connect with me</div>
@@ -131,7 +134,7 @@
           </div>
         </div>
 
-        <div class="grip-card absolute top-[11.5rem] right-4 z-10 w-72 rounded-[22px] p-5 text-white shadow-2xl"
+        <div class="grip-card relative lg:absolute lg:top-[11.5rem] lg:right-4 z-10 lg:w-72 rounded-[22px] p-4 lg:p-5 text-white shadow-2xl"
              style="background: linear-gradient(160deg, rgba(254,94,14,0.92), rgba(254,140,60,0.78)); backdrop-filter: blur(8px);">
           <div class="flex items-center justify-between">
             <div class="text-lg font-medium">Follower grip</div>
@@ -145,10 +148,10 @@
           <div class="ticks mt-4" data-grip-ticks="follower"></div>
           <div class="flex justify-between text-xs opacity-80 mt-1.5"><span>Closed</span><span>Open</span></div>
         </div>
-      </div>
+      </div></div>
 
       <!-- Bottom cards: arms view -->
-      <div id="arm-cards" class="absolute left-0 right-0 bottom-0 z-10 grid grid-cols-4 gap-4">
+      <div id="arm-cards" class="relative lg:absolute lg:left-0 lg:right-0 lg:bottom-0 z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
         <div class="card p-5" data-arm-card="leader">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2.5">
@@ -223,7 +226,7 @@
       </div>
 
       <!-- Bottom cards: base view -->
-      <div id="base-hud" class="hidden absolute left-0 right-0 bottom-0 z-10 grid grid-cols-3 gap-4">
+      <div id="base-hud" class="hidden relative lg:absolute lg:left-0 lg:right-0 lg:bottom-0 z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-4">
         <div class="card p-5">
           <div class="flex items-center gap-2.5">
             <span class="dot" id="base-dot"></span>
@@ -232,7 +235,7 @@
           </div>
           <div class="mt-4 text-[15px] tabular-nums" id="base-vel">0.00 fwd  0.00 left  m/s   0°/s</div>
           <div class="mt-1 text-sm text-ink-40 tabular-nums" id="base-odom">0.00 m from start   heading 0°</div>
-          <div class="flex items-center gap-2 mt-4">
+          <div class="flex flex-wrap items-center gap-2 mt-4">
             <div class="segment" id="base-speed">
               <button data-s="0.4" class="pill">Slow</button>
               <button data-s="0.7" class="pill is-on">Medium</button>
@@ -243,7 +246,7 @@
           </div>
         </div>
         <div class="card p-5" id="base-keys">
-          <div class="text-xl font-medium">Keyboard</div>
+          <div class="text-xl font-medium">Keyboard <span class="text-ink-40 font-normal text-base">or hold the keys</span></div>
           <div class="flex items-center gap-6 mt-4">
             <div class="grid grid-cols-3 gap-1.5 text-center">
               <span></span><kbd data-key="ArrowUp" class="base-key">&uarr;</kbd><span></span>
@@ -257,7 +260,7 @@
             </div>
           </div>
         </div>
-        <div class="card p-5">
+        <div class="card p-5 hidden lg:block">
           <div class="text-xl font-medium">Drive from your phone</div>
           <p class="text-sm text-ink-60 mt-2">Join the same Wi-Fi as this laptop, then open:</p>
           <div class="mt-3 space-y-1.5" id="phone-urls"><span class="text-ink-40 text-sm">waiting for the bridge…</span></div>

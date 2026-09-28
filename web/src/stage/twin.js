@@ -132,6 +132,7 @@ export function resize(container) {
   if (!camera) return;
   camera.aspect = container.clientWidth / container.clientHeight;
   camera.updateProjectionMatrix();
+  if (!moved) resetView();
 }
 
 export function frame(renderer) {
@@ -143,11 +144,19 @@ export function setEnabled(on) {
   if (controls) controls.enabled = on;
 }
 
+// Reframed on resize until someone orbits the view themselves.
+let moved = false;
+const WIDE = 1.3;   // narrower than this and the arms' width stops fitting
+
 export function resetView() {
   // Far enough back that both arms, fully raised, clear the title and the
   // card row; aimed a little low so they sit in the band between the two.
-  camera.position.set(0, 0.78, -1.05);
-  controls.target.set(0, 0.06, 0.12);
+  // A narrow (phone) view has nothing laid over it, so it only backs off
+  // enough to keep the arms' width in frame, and aims at their middle.
+  const narrow = Math.min(1, camera.aspect / WIDE);
+  const back = Math.max(1, 0.65 / narrow);
+  camera.position.set(0, 0.06 + 0.72 * back, 0.12 - 1.17 * back);
+  controls.target.set(0, narrow < 1 ? 0.12 : 0.06, 0.12);
 }
 
 export async function initTwin(renderer, container, leaderSide, spacing) {
@@ -159,6 +168,7 @@ export async function initTwin(renderer, container, leaderSide, spacing) {
   controls.minDistance = 0.35;
   controls.maxDistance = 2.2;
   resetView();
+  controls.addEventListener("start", () => { moved = true; });
   addLights(scene);
   floor();
   await Promise.all([loadArm("leader"), loadArm("follower")]);

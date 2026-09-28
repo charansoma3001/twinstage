@@ -5,7 +5,7 @@ export const REPO_URL = "https://github.com/charansoma3001/twinstage";
 
 export function showDemoBadge() {
   if (!IS_DEMO) return;
-  const cluster = document.querySelector("header > div:last-child");
+  const cluster = document.getElementById("header-status");
   if (!cluster) return;
   const tag = document.createElement("span");
   tag.className = "tag";
@@ -16,5 +16,9 @@ export function showDemoBadge() {
   code.className = "pill !h-9 !px-3 text-sm";
   code.href = REPO_URL;
   code.textContent = "Run it on your robot";
-  cluster.prepend(tag, code);
+  // Its own full-width row on a phone, inline with the status pills from lg.
+  const row = document.createElement("div");
+  row.className = "order-2 w-full flex items-center gap-2 lg:order-none lg:w-auto";
+  row.append(tag, code);
+  cluster.prepend(row);
 }

@@ -55,3 +55,17 @@
   from { opacity: 0; transform: translate(-50%, -8px); }
   to { opacity: 1; transform: translate(-50%, 0); }
 }
+
+/* The presenter's event and name need the wide header; the phone's first row
+   is only the logo, settings and STOP. */
+@media (max-width: 1023px) {
+  /* The page scrolls here, so the background spans all of it, not one screen. */
+  html, body { height: auto; }
+  #presenter-event, #presenter-name { display: none !important; }
+  /* The switches share one row: no room for the keyboard-shortcut badges. */
+  header .segment .pill { padding: 0 0.8rem; }
+  header .segment .count { display: none; }
+}
+
+/* Held by touch as well as by the keyboard. */
+.base-key { touch-action: none; user-select: none; -webkit-user-select: none; }
