@@ -260,7 +260,8 @@ body {
     font-size: 0.85rem;
     color: var(--ink-60);
   }
-  .field > span:first-child { font-weight: 500; }
+  .field > span:first-child,
+  .field > label:first-child { font-weight: 500; }
 
   .input,
   .select {

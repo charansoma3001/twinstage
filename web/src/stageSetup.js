@@ -1,7 +1,8 @@
 import { loadPrefs, savePrefs, listCameras } from "./prefs.js";
 import { setStepStatus } from "./settingsSteps.js";
 
-/* Settings-page controls for the stage rig: camera roles and hand -> arm. */
+/* Settings-page controls for the stage rig: camera roles and rotation, and
+   hand -> arm. */
 const el = (id) => document.getElementById(id);
 
 function fillSelect(select, cams, current) {
@@ -33,6 +34,12 @@ function paintToggles(p) {
   label("btn-leader-side", p.leaderSide === "left" ? "Left hand" : "Right hand");
   label("btn-flip-labels", p.flipLabels ? "Flipped" : "As reported");
   el("btn-flip-labels").setAttribute("aria-pressed", String(p.flipLabels));
+  for (const [id, key] of [["btn-rot-hands", "handsCameraRot"], ["btn-rot-follower", "followerCameraRot"]]) {
+    label(id, p[key] === 180 ? "Upside down" : "Upright");
+    el(id).setAttribute("aria-pressed", String(p[key] === 180));
+  }
+  // The calibration preview is the hand camera: turned the same way as on the stage.
+  for (const id of ["webcam-video", "hand-canvas"]) el(id).classList.toggle("rotate-180", p.handsCameraRot === 180);
 }
 
 function paintStatus(p = loadPrefs()) {
@@ -66,6 +73,9 @@ export function initStageSetup() {
   el("btn-flip-labels").addEventListener("click", () => {
     paintToggles(savePrefs({ flipLabels: !loadPrefs().flipLabels }));
   });
+  for (const [id, key] of [["btn-rot-hands", "handsCameraRot"], ["btn-rot-follower", "followerCameraRot"]]) {
+    el(id).addEventListener("click", () => paintToggles(savePrefs({ [key]: loadPrefs()[key] === 180 ? 0 : 180 })));
+  }
   for (const [id, key] of [["in-arm-spacing", "armSpacingCm"], ["in-min-gap", "minGapCm"]]) {
     const input = el(id);
     input.value = loadPrefs()[key];

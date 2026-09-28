@@ -10,6 +10,8 @@ const KEY = "twinstage:stage:v1";
 const DEFAULTS = {
   handsCameraId: "",
   followerCameraId: "",
+  handsCameraRot: 0,      // degrees, 0 or 180: a camera mounted upside down
+  followerCameraRot: 180, // the follower's camera hangs upside down on its wrist
   camerasOpen: false,     // the stage's camera column, folded away by default
   leaderSide: "left",     // which half of the calibrated area, and which hand, drives the leader
   flipLabels: false,      // MediaPipe labels assume a selfie view; top-down can read them swapped
@@ -25,6 +27,9 @@ export function loadPrefs() {
       if (typeof saved[k] === typeof DEFAULTS[k]) out[k] = saved[k];
     }
     if (out.leaderSide !== "left" && out.leaderSide !== "right") out.leaderSide = "left";
+    for (const k of ["handsCameraRot", "followerCameraRot"]) {
+      if (out[k] !== 0 && out[k] !== 180) out[k] = DEFAULTS[k];
+    }
     for (const k of ["armSpacingCm", "minGapCm"]) {
       if (!Number.isFinite(out[k]) || out[k] < 0 || out[k] > 200) out[k] = DEFAULTS[k];
     }

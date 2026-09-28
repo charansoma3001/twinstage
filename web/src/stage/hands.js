@@ -38,7 +38,7 @@ let canvas = null;
 let ctx = null;
 let tracker = null;
 let stream = null;
-let prefs = { leaderSide: "left", flipLabels: false };
+let prefs = { leaderSide: "left", flipLabels: false, upsideDown: false };
 let lastResults = null;
 let frames = 0, fpsT = performance.now();
 
@@ -196,6 +196,14 @@ function drawHand(r, lm, colour, text) {
     ctx.fill();
   }
   const [wx, wy] = toCanvas(r, lm[0].x, lm[0].y);
+  // An upside-down picture keeps its labels readable: each one is turned
+  // back about its own centre.
+  ctx.save();
+  if (prefs.upsideDown) {
+    ctx.translate(wx, wy + 24);
+    ctx.rotate(Math.PI);
+    ctx.translate(-wx, -(wy + 24));
+  }
   ctx.font = "600 13px Urbanist, system-ui, sans-serif";
   const w = ctx.measureText(text).width + 20;
   ctx.fillStyle = colour;
@@ -206,6 +214,7 @@ function drawHand(r, lm, colour, text) {
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(text, wx, wy + 24);
+  ctx.restore();
 }
 
 function draw() {
@@ -218,6 +227,11 @@ function draw() {
   }
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, cw, ch);
+  // The whole picture, overlay included, turns for a camera mounted upside down.
+  if (prefs.upsideDown) {
+    ctx.translate(cw, ch);
+    ctx.rotate(Math.PI);
+  }
   if (!video || video.readyState < 2) return;
   const r = coverRect(video.videoWidth, video.videoHeight, cw, ch);
   ctx.save();

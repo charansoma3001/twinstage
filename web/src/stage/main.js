@@ -106,6 +106,11 @@ function setCamerasOpen(open) {
   syncCameras();
 }
 
+function paintRotation() {
+  setHandPrefs({ upsideDown: S.prefs.handsCameraRot === 180 });
+  el("follower-video").classList.toggle("rotate-180", S.prefs.followerCameraRot === 180);
+}
+
 let followerOpening = 0;
 async function startFollowerCamera() {
   const mine = ++followerOpening;
@@ -193,6 +198,7 @@ async function boot() {
     S.prefs = p;
     setHandPrefs({ leaderSide: p.leaderSide, flipLabels: p.flipLabels });
     twin.setLayout(p.leaderSide, p.armSpacingCm / 100);
+    paintRotation();
     if (running.hands && p.handsCameraId !== was.handsCameraId) restartHands(p.handsCameraId);
     if (running.follower && p.followerCameraId !== was.followerCameraId) startFollowerCamera();
     if (p.camerasOpen !== was.camerasOpen) syncCameras();
@@ -225,6 +231,7 @@ async function boot() {
   setInterval(paintCards, 100);
   requestAnimationFrame(frame);
   setHandPrefs({ leaderSide: S.prefs.leaderSide, flipLabels: S.prefs.flipLabels });
+  paintRotation();
   wide.addEventListener("change", syncCameras);
   syncCameras();
 }

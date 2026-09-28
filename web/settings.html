@@ -79,12 +79,18 @@
         <h1 class="panel-title">Cameras &amp; hands</h1>
         <p class="panel-lede">The stage uses two cameras: one looking down at both hands, one watching the follower. Which hand drives which arm is set here too.</p>
         <div class="space-y-4">
-          <label class="field"><span>Hand camera, top-down over both hands</span>
-            <select id="sel-cam-hands" class="select"></select>
-          </label>
-          <label class="field"><span>Follower camera, shown on the stage only</span>
-            <select id="sel-cam-follower" class="select"></select>
-          </label>
+          <div class="field"><label for="sel-cam-hands">Hand camera, top-down over both hands</label>
+            <div class="flex gap-2">
+              <select id="sel-cam-hands" class="select flex-1 min-w-0"></select>
+              <button id="btn-rot-hands" class="pill toggle shrink-0" title="Turn the picture the right way up for a camera mounted upside down. Tracking is unchanged."><svg class="shrink-0 opacity-50" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg><span data-label>Upright</span></button>
+            </div>
+          </div>
+          <div class="field"><label for="sel-cam-follower">Follower camera, shown on the stage only</label>
+            <div class="flex gap-2">
+              <select id="sel-cam-follower" class="select flex-1 min-w-0"></select>
+              <button id="btn-rot-follower" class="pill toggle shrink-0" title="Turn the picture the right way up for a camera mounted upside down"><svg class="shrink-0 opacity-50" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg><span data-label>Upright</span></button>
+            </div>
+          </div>
           <button id="btn-cam-refresh" class="pill">Find cameras</button>
         </div>
         <div class="divider"></div>

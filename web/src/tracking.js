@@ -170,7 +170,13 @@ export function drawCalibrationOverlays(ctx, w, h) {
 
     ctx.fillStyle = isCurrentStep ? "#febe42" : "rgba(255, 255, 255, 0.9)";
     ctx.font = isCurrentStep ? "bold 10px monospace" : "9px monospace";
-    ctx.fillText(c.name, c.pt.u * w + 8, c.pt.v * h - 4);
+    // The preview may be turned upside down (a CSS rotation); its labels
+    // are drawn turned back so they still read the right way up.
+    ctx.save();
+    ctx.translate(c.pt.u * w + 8, c.pt.v * h - 4);
+    if (canvasElement.classList.contains("rotate-180")) ctx.rotate(Math.PI);
+    ctx.fillText(c.name, 0, 0);
+    ctx.restore();
   });
 }
 
