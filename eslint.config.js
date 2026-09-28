@@ -9,7 +9,7 @@ export default [
     languageOptions: { globals: { ...globals.browser } }
   },
   {
-    files: ["server/**/*.js", "*.config.js", "web/*.config.js", "web/test/**/*.js"],
+    files: ["server/**/*.js", "scripts/**/*.mjs", "*.config.js", "web/*.config.js", "web/test/**/*.js"],
     languageOptions: { globals: { ...globals.node } }
   },
   {
@@ -19,5 +19,5 @@ export default [
     }
   },
   // The bridge is a CLI process: stdout is its log.
-  { files: ["server/**/*.js"], rules: { "no-console": "off" } }
+  { files: ["server/**/*.js", "scripts/**/*.mjs"], rules: { "no-console": "off" } }
 ];

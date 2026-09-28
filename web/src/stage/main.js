@@ -5,11 +5,11 @@ import { loadCalibration } from "../persist.js";
 import { loadPrefs, savePrefs, onPrefsChange, openCamera } from "../prefs.js";
 import { createBridgeLink } from "../bridge.js";
 import { armToUrdf } from "../jointMap.js";
-import { keepOut, ikJoints, inwardLimit as keepOutLimit } from "./keepout.js";
+import { keepOut, inwardLimit as keepOutLimit } from "./keepout.js";
 import * as twin from "./twin.js";
 import { hands, fresh, startHands, restartHands, setHandPrefs, setDetecting } from "./hands.js";
 import {
-  primitiveTarget, mirror, mirrorStation, REST_JOINTS, STATION_A, STATION_B, PICK_CYCLE_S
+  primitiveTarget, mirror, mirrorStation, REST_JOINTS, STATION_A, STATION_B, PICK_CYCLE_S, PICK_HEIGHT
 } from "../primitives.js";
 import {
   baseScene, baseCamera, initBaseTwin, setBaseActive, isBaseActive,
@@ -129,14 +129,22 @@ function runPrimitive(arm, now) {
   }
   let t = primitiveTarget(name, (now - t0) / 1000);
   if (left) t = mirror(t);
-  const cart = filterTarget(arm, keepOut(t, left, inwardLimit()));
-  const q = ikJoints(cart);
+  const { cart, q } = keepOut(filterTarget(arm, t), left, inwardLimit());
+  // Blocked: send nothing, and the driver holds the last pose that fitted.
+  if (!q) return;
   twin.setPose(arm, q);
   twin.setTarget(arm, cart);
   twin.setStations(arm, name === "pickAndPlace"
-    ? [STATION_A, STATION_B].map((st) => keepOut(left ? mirrorStation(st) : st, left, inwardLimit()))
+    ? [STATION_A, STATION_B].map((st) => stationOnTable(left ? mirrorStation(st) : st, left))
     : null);
   stream(arm, q, now);
+}
+
+/* Where the arm really picks at a station: the keep-out may move it. */
+function stationOnTable(st, left) {
+  const pick = { ...st, y: PICK_HEIGHT, pitch: -Math.PI / 2, roll: 0, gripper: 0.9 };
+  const { cart } = keepOut(pick, left, inwardLimit());
+  return cart ? { x: cart.x, z: cart.z } : st;
 }
 
 function startPrimitive(name) {
@@ -208,8 +216,8 @@ function frame(now) {
     const handDriven = S.mode === "hands" && (S.handsArms === "both" || arm === "follower");
     if (handDriven) {
       if (h) {
-        const cart = filterTarget(arm, keepOut(h.cart, isLeftArm(arm), inwardLimit()));
-        const q = ikJoints(cart);
+        const { cart, q } = keepOut(filterTarget(arm, h.cart), isLeftArm(arm), inwardLimit());
+        if (!q) continue;   // blocked: nothing sent, the driver holds
         twin.setPose(arm, q);
         twin.setTarget(arm, cart);
         // Only while the hand is in view: a lost hand stops the stream and the
