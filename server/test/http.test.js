@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isValidJointMap } from "../http.js";
+import { isValidJointMap } from "../hub.js";
 
 const good = () => ({
   shoulder_pan: { sign: 1, offset_deg: 0 }, shoulder_lift: { sign: -1, offset_deg: 4 },

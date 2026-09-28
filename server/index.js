@@ -7,7 +7,8 @@
 
      config.js  environment        arms.js   SO-101 arm drivers
      modes.js   who may command    base.js   LeKiwi base driver
-     http.js    pages and /api     driver.js newline-JSON child processes
+     hub.js     client messages    driver.js newline-JSON child processes
+     http.js    pages and /api
    ========================================================================= */
 import http from "node:http";
 import { WebSocketServer } from "ws";
@@ -16,6 +17,9 @@ import { createArms } from "./arms.js";
 import { createModes } from "./modes.js";
 import { createBase } from "./base.js";
 import { createApp, phoneUrls } from "./http.js";
+import { createHub } from "./hub.js";
+import { spawnDriver } from "./driver.js";
+import { readFile } from "node:fs/promises";
 
 let wss = null;
 function broadcast(obj) {
@@ -27,85 +31,25 @@ function broadcast(obj) {
 
 let modes = null;
 const arms = createArms({
-  config: ARM_CONFIG, python: ARM_PYTHON, script: ARM_SCRIPT, dry: ARM_DRY, broadcast,
+  config: ARM_CONFIG, python: ARM_PYTHON, script: ARM_SCRIPT, dry: ARM_DRY, broadcast, spawn: spawnDriver,
   onPresent: (name, msg) => modes.onPresent(name, msg),
   onDriverExit: (name) => modes.onDriverExit(name)
 });
 modes = createModes({ arms, broadcast });
-const base = await createBase({ config: BASE, broadcast });
-
-let lastCommand = null;
-let commandCount = 0;
-
-const snapshot = () => ({
-  robot: "so-101",
-  arms: arms.view(),
-  // The follower under its old key, for anything still reading it.
-  arm: arms.view().follower,
-  mode: modes.view(),
-  base: base.view(),
-  phoneUrls: phoneUrls(PORT)
+const base = createBase({
+  config: BASE, broadcast, spawn: spawnDriver,
+  scriptB64: await readFile(BASE.script).then((b) => b.toString("base64")).catch(() => null)
 });
 
-const app = createApp({
-  dist: DIST,
-  armConfig: ARM_CONFIG,
-  health: () => ({ ok: true, commands: commandCount, ...snapshot() }),
-  stats: () => ({ lastCommand, commandCount })
-});
+const hub = createHub({ arms, modes, base, broadcast, phoneUrls: () => phoneUrls(PORT) });
+
+const app = createApp({ dist: DIST, armConfig: ARM_CONFIG, health: hub.health, stats: hub.stats });
 const server = http.createServer(app);
 wss = new WebSocketServer({ server });
 
-/* `joints` is [j1_pan, j2_shoulder, j3_elbow, j4_wrist_flex, j5_wrist_roll,
-   j6_gripper], all radians in the URDF's convention -- including the gripper,
-   which is its joint angle over 0..1.74533 rad, not a 0..1 aperture. The
-   driver owns every unit conversion and every safety clamp; this is a pipe,
-   gated by mode. */
-function routeJoints(msg) {
-  const name = msg.arm || "follower";
-  if (!arms.has(name) || !modes.allowsJointsFrom(msg.src || "studio")) return;
-  lastCommand = msg;
-  commandCount++;
-  arms.send(name, { cmd: "joints", j: msg.joints });
-}
-
-function targetsOf(msg) {
-  if (msg.arm === "all") return arms.names;
-  return arms.has(msg.arm || "follower") ? [msg.arm || "follower"] : [];
-}
-
-function onClientMessage(ws, msg) {
-  switch (msg.cmd) {
-    case "drive": return base.drive(ws, msg);
-    case "base_stop": return void base.send({ cmd: "stop" });
-    case "base_reset_odom": return void base.send({ cmd: "reset_odom" });
-    case "mode": return modes.set(msg.mode, msg.note || "", ws);
-    case "freeze": return modes.freeze("stop pressed");
-    case "telemetry": {
-      // Control commands go straight through to the named driver(s).
-      const names = targetsOf(msg);
-      const sent = names.filter((n) => arms.send(n, { cmd: "telemetry", on: !!msg.on, ...(msg.hz ? { hz: msg.hz } : {}) }));
-      if (msg.on && !sent.length) {
-        // No driver at all: say so, or the page waits forever for readings
-        // that were never going to come.
-        broadcast({ type: "log", msg: `no ${names.join("/") || "arm"} driver running - check ARM_PORT / LEADER_PORT` });
-        console.warn("[bridge] telemetry requested but no driver is running");
-      }
-      return;
-    }
-    case "relax":
-    case "hold":
-      for (const n of targetsOf(msg)) arms.send(n, { cmd: msg.cmd });
-      console.log(`[bridge] ${msg.cmd} ${msg.arm || "follower"} requested`);
-      return;
-    default:
-      if (Array.isArray(msg.joints) && msg.joints.length === 6 && msg.joints.every(Number.isFinite)) routeJoints(msg);
-  }
-}
-
 wss.on("connection", (ws) => {
   console.log("[bridge] client connected");
-  ws.send(JSON.stringify({ type: "hello", hz: 50, ...snapshot() }));
+  ws.send(JSON.stringify(hub.hello()));
   ws.on("message", (raw) => {
     let msg;
     try {
@@ -113,11 +57,11 @@ wss.on("connection", (ws) => {
     } catch {
       return;
     }
-    onClientMessage(ws, msg);
+    hub.handle(ws, msg);
   });
   ws.on("close", () => {
     console.log("[bridge] client disconnected");
-    base.clientLeft(ws);
+    hub.clientLeft(ws);
   });
 });
 

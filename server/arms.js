@@ -1,5 +1,3 @@
-import path from "node:path";
-import { spawnDriver } from "./driver.js";
 
 /* =========================================================================
    The SO-101 arm drivers: one drivers/so101_arm.py child per configured arm.
@@ -8,10 +6,15 @@ import { spawnDriver } from "./driver.js";
    torque-enabled arm running behind a dead bridge. A driver that exits on
    its own (bus lost, USB hiccup) is restarted with a growing delay, up to
    RESTART_MAX times a minute.
+
+   Browser-safe: `spawn` starts a driver (driver.js's spawnDriver in the
+   bridge, a simulated one in the Pages demo), so nothing here needs Node.
    ========================================================================= */
 const RESTART_MAX = 5;
 
-export function createArms({ config, python, script, dry, broadcast, onPresent, onDriverExit }) {
+const basename = (p) => p.split(/[\\/]/).pop();
+
+export function createArms({ config, python, script, dry, broadcast, onPresent, onDriverExit, spawn }) {
   const names = Object.keys(config);
   let shuttingDown = false;
   const arms = Object.fromEntries(names.map((name) => [name, {
@@ -29,7 +32,7 @@ export function createArms({ config, python, script, dry, broadcast, onPresent, 
       a.state.relaxed = !!msg.relaxed;
       a.state.identityMap = !!msg.identity_map;
       console.log(`${tag} ready on ${msg.port} (${msg.dry_run ? "dry run" : "LIVE"}), limits`, msg.limits);
-      if (msg.identity_map) console.warn(`${tag} no ${path.basename(config[name].map)} - measure it in /settings before driving it from hands`);
+      if (msg.identity_map) console.warn(`${tag} no ${basename(config[name].map)} - measure it in /settings before driving it from hands`);
     } else if (msg.type === "status") {
       a.state.last = msg;
       a.state.relaxed = !!msg.relaxed;
@@ -79,7 +82,7 @@ export function createArms({ config, python, script, dry, broadcast, onPresent, 
     if (dry) args.push("--dry-run");
     if (dry && cfg.dryPresent) args.push("--dry-present", cfg.dryPresent);
     console.log(`[${name}] spawning ${python} ${args.join(" ")}`);
-    arms[name].driver = spawnDriver({
+    arms[name].driver = spawn({
       cmd: python, args, tag: `[${name}]`,
       onMessage: (msg) => onMessage(name, msg),
       onExit: (code) => onExit(name, code)

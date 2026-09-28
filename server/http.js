@@ -2,8 +2,7 @@ import path from "node:path";
 import os from "node:os";
 import { readFile, writeFile } from "node:fs/promises";
 import express from "express";
-
-const BODY = ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll"];
+import { isValidJointMap } from "./hub.js";
 
 // Where a phone on the same network can reach the drive page.
 export function phoneUrls(port) {
@@ -14,13 +13,6 @@ export function phoneUrls(port) {
     }
   }
   return out;
-}
-
-/* A joint map the driver can load: each body joint needs sign +/-1 and a
-   finite offset. The gripper entry is optional. */
-export function isValidJointMap(body) {
-  return !!body && BODY.every((n) => body[n] && (body[n].sign === 1 || body[n].sign === -1) &&
-    Number.isFinite(body[n].offset_deg));
 }
 
 export function createApp({ dist, armConfig, health, stats }) {

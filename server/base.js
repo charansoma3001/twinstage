@@ -1,9 +1,7 @@
-import { readFile } from "node:fs/promises";
-import { spawnDriver } from "./driver.js";
-
 /* =========================================================================
    The LeKiwi base driver: drivers/lekiwi_base.py, over ssh on the base's Pi,
-   or locally as a dry run.
+   or locally as a dry run. Browser-safe like arms.js: `spawn` and the
+   script's base64 are passed in.
    ========================================================================= */
 // One driver at a time: whoever last sent a non-zero drive owns the base until
 // they have been idle for OWNER_MS. A stop is accepted from anyone.
@@ -50,8 +48,7 @@ export function createOwnership(now = Date.now) {
   };
 }
 
-export async function createBase({ config, broadcast }) {
-  const scriptB64 = await readFile(config.script).then((b) => b.toString("base64")).catch(() => null);
+export function createBase({ config, broadcast, spawn, scriptB64 = null }) {
   const ownership = createOwnership();
   let driver = null;
   let ping = null;
@@ -94,7 +91,7 @@ export async function createBase({ config, broadcast }) {
     }
     const where = config.host ? `on ${config.host}` : "locally";
     console.log(`[base] starting ${config.dry ? `dry run ${where}` : `LIVE ${where}:${config.serial}`}`);
-    driver = spawnDriver({
+    driver = spawn({
       cmd, args, tag: "[base]", onMessage,
       onExit: (code) => {
         clearInterval(ping);
@@ -116,7 +113,7 @@ export async function createBase({ config, broadcast }) {
     // the bus itself. The kill is the fallback if it does not.
     const { proc } = driver;
     proc.stdin.end();
-    setTimeout(() => proc.kill("SIGTERM"), 800).unref();
+    setTimeout(() => proc.kill("SIGTERM"), 800).unref?.();
   }
 
   function drive(client, msg) {
