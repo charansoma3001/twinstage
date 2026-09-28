@@ -57,7 +57,7 @@ function wave(t) {
 
 /* Block shuttles A -> B, then B -> A, and so on: after any whole number of
    cycles it sits on one of the two taped stations. */
-export const shuttle = {
+const shuttle = {
   pickAt: (k) => (k % 2 === 0 ? STATION_A : STATION_B),
   placeAt: (k) => (k % 2 === 0 ? STATION_B : STATION_A)
 };

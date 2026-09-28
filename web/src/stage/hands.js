@@ -275,7 +275,7 @@ export async function startHands(videoEl, canvasEl, cameraId) {
   }
 }
 
-export function stopHands() {
+function stopHands() {
   hands.running = false;
   if (stream) stream.getTracks().forEach((t) => t.stop());
   stream = null;
