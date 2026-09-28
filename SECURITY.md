@@ -2,7 +2,7 @@
 
 ## Reporting a vulnerability
 
-Email charan.soma311@gmail.com with what you found and how to reproduce it. Please do not open a public issue for it.
+Report it privately through GitHub: the repository's [Security tab](https://github.com/charansoma3001/twinstage/security) → **Report a vulnerability** ([direct link](https://github.com/charansoma3001/twinstage/security/advisories/new)). Say what you found and how to reproduce it. Only the maintainers can see the report. Please do not open a public issue for it.
 
 ## What the bridge trusts
 
