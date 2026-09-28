@@ -181,7 +181,7 @@ class StdinReader(threading.Thread):
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", required=True, help="serial device, e.g. /dev/tty.usbmodemXXXXXXXX")
-    ap.add_argument("--id", default="follower_arm", help="calibration name under ~/.cache/huggingface/lerobot")
+    ap.add_argument("--id", default="follower", help="calibration name under ~/.cache/huggingface/lerobot")
     ap.add_argument("--hz", type=float, default=50.0)
     ap.add_argument("--max-deg-per-s", type=float, default=60.0,
                     help="slew limit per joint; also what makes the first move a ramp rather than a jump")

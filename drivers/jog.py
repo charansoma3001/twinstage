@@ -150,7 +150,7 @@ def solve(poses: list[tuple[list[float], dict[str, float]]], previous: dict) -> 
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", required=True)
-    ap.add_argument("--id", default="follower_arm")
+    ap.add_argument("--id", default="follower")
     ap.add_argument("--api", default="http://localhost:8787")
     args = ap.parse_args()
 

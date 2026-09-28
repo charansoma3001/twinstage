@@ -12,6 +12,7 @@ retry will ride over it.
     python drivers/scan.py /dev/cu.usbmodemXXXX
 """
 import sys
+
 from lerobot.motors import Motor, MotorNormMode
 from lerobot.motors.feetech import FeetechMotorsBus
 
@@ -31,7 +32,8 @@ alive = []
 for i, name in NAMES.items():
     model = bus.ping(i, num_retry=2)
     ok = model is not None
-    if ok: alive.append(i)
+    if ok:
+        alive.append(i)
     print(f"  id {i} {name:<15} {'OK  model ' + str(model) if ok else 'NO REPLY'}")
 
 if alive:

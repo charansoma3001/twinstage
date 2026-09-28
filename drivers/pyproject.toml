@@ -1,0 +1,27 @@
+[project]
+name = "twinstage-drivers"
+version = "0.1.0"
+description = "LeRobot drivers the Twinstage bridge runs: SO-101 arms and the LeKiwi base."
+license = "Apache-2.0"
+requires-python = ">=3.10"
+# The drivers run in --dry-run with the standard library alone; driving real
+# hardware needs LeRobot with the Feetech extra.
+dependencies = []
+
+[project.optional-dependencies]
+hardware = ["lerobot[feetech]"]
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+# Every zip here pairs fixed-length joint or wheel lists.
+ignore = ["B905"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
