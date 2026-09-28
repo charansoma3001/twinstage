@@ -1,4 +1,3 @@
-import { state } from "./state.js";
 import { onBridgeMessage, sendCommand, setMirroring, setRelaxed } from "./robotLink.js";
 import { applyPose } from "./robot.js";
 

@@ -4,7 +4,7 @@ import { CONFIG, PRESENTER } from "../config.js";
 import { loadCalibration } from "../persist.js";
 import { loadPrefs, savePrefs, onPrefsChange, openCamera } from "../prefs.js";
 import * as link from "./link.js";
-import { keepOut, ikJoints } from "./keepout.js";
+import { keepOut, ikJoints, inwardLimit as keepOutLimit } from "./keepout.js";
 import * as twin from "./twin.js";
 import { hands, fresh, startHands, restartHands, setHandPrefs, setDetecting } from "./hands.js";
 import {
@@ -93,7 +93,7 @@ function toUrdf(arm, pos) {
 
 
 function inwardLimit() {
-  return Math.max(0, S.prefs.armSpacingCm / 2 - S.prefs.minGapCm / 2) / 100;
+  return keepOutLimit(S.prefs.armSpacingCm, S.prefs.minGapCm);
 }
 
 function filterTarget(arm, t) {

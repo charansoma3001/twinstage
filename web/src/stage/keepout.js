@@ -8,10 +8,10 @@ import { solveSO101IK } from "../kinematics.js";
    its +X. `lim` is how far toward the other arm (metres from this arm's pan
    axis) it may reach: half the base spacing, less half the minimum gap.
 
-   Only the gripper target is clamped. Every link lies in the pan plane, and
-   over the whole hands workspace, at every approach pitch the IK can relax
-   to, and along every mirrored primitive, no joint reached further inward
-   than the gripper (worst overshoot 0.00 mm, 30 cm spacing, 12 cm gap).
+   Only the tool point is clamped. The body is wider than that point: on the
+   URDF meshes, at 30 cm spacing and a 12 cm gap, the wrist and gripper
+   housings reach up to ~38 mm further inward and the open moving jaw up to
+   ~67 mm, which is past the midline. web/test/keepout.test.js measures it.
    ========================================================================= */
 export function ikJoints(cart) {
   const q = solveSO101IK(cart);
@@ -21,4 +21,10 @@ export function ikJoints(cart) {
 export function keepOut(t, left, lim) {
   const x = left ? Math.max(t.x, -lim) : Math.min(t.x, lim);
   return x === t.x ? t : { ...t, x };
+}
+
+/* How far toward the other arm (metres) either arm may reach: half the base
+   spacing, less half the minimum gripper gap. */
+export function inwardLimit(armSpacingCm, minGapCm) {
+  return Math.max(0, armSpacingCm / 2 - minGapCm / 2) / 100;
 }

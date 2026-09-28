@@ -259,7 +259,7 @@ export async function startHands(videoEl, canvasEl, cameraId) {
     stream = await openCamera(cameraId, { width: 640, height: 480, frameRate: 60 });
     const st = stream.getVideoTracks()[0]?.getSettings?.() || {};
     hands.capture = { width: st.width, height: st.height, frameRate: st.frameRate };
-    console.log("Hand camera:", hands.capture);
+    console.info("Hand camera:", hands.capture);
     video.srcObject = stream;
     await video.play();
     hands.running = true;
@@ -268,7 +268,7 @@ export async function startHands(videoEl, canvasEl, cameraId) {
     // One tracker for the page's lifetime: switching cameras reuses it.
     if (!tracker) tracker = createHandTracker({ numHands: 2, onResults });
     hands.delegate = await tracker.ready;
-    console.log("Hand tracking on", hands.delegate);
+    console.info("Hand tracking on", hands.delegate);
   } catch (err) {
     hands.error = err.message || String(err);
     console.error("Hand camera failed:", err);

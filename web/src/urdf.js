@@ -31,28 +31,38 @@ function applyOrigin(obj, { xyz, rpy }) {
   obj.rotation.set(rpy[0], rpy[1], rpy[2], "ZYX");
 }
 
-function loadMesh(url, color) {
-  return new Promise((resolve, reject) => {
-    stlLoader.load(url, (geometry) => {
-      const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({
-        color: color || 0x9ca3af,
-        roughness: 0.55,
-        metalness: 0.1
-      }));
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      resolve(mesh);
-    }, undefined, reject);
-  });
+export function meshFor(geometry, color) {
+  const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({
+    color: color || 0x9ca3af,
+    roughness: 0.55,
+    metalness: 0.1
+  }));
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  return mesh;
 }
 
 export async function loadURDF(url) {
-  const baseDir = url.slice(0, url.lastIndexOf("/") + 1);
   const res = await fetch(url);
   if (!res.ok) throw new Error(`URDF ${url}: ${res.status} ${res.statusText}`);
-  const doc = new DOMParser().parseFromString(await res.text(), "application/xml");
+  const baseDir = url.slice(0, url.lastIndexOf("/") + 1);
+  const robot = parseURDF(await res.text(), {
+    label: `URDF ${url}`,
+    loadMesh: (file, color) => new Promise((resolve, reject) => {
+      stlLoader.load(baseDir + file, (geometry) => resolve(meshFor(geometry, color)), undefined, reject);
+    })
+  });
+  await robot.meshesLoaded;
+  return robot;
+}
+
+/* Builds the link/joint tree from URDF text. loadMesh(file, color) returns a
+   promise of a mesh for each visual; without it the tree is kinematics only.
+   meshesLoaded settles once every visual is attached. */
+export function parseURDF(text, { loadMesh = null, label = "URDF" } = {}) {
+  const doc = new DOMParser().parseFromString(text, "application/xml");
   const parseError = doc.querySelector("parsererror");
-  if (parseError) throw new Error(`URDF ${url} is not valid XML`);
+  if (parseError) throw new Error(`${label} is not valid XML`);
   const robotEl = doc.documentElement;
 
   // Robot-level named materials.
@@ -75,14 +85,14 @@ export async function loadURDF(url) {
     for (const visual of kids(linkEl, "visual")) {
       const geometry = kids(visual, "geometry")[0];
       const meshEl = geometry && kids(geometry, "mesh")[0];
-      if (!meshEl) continue;
+      if (!meshEl || !loadMesh) continue;
       const file = meshEl.getAttribute("filename").replace(/^package:\/\/[^/]+\//, "");
       const matName = kids(visual, "material")[0]?.getAttribute("name");
       const origin = originOf(visual);
       // CAD exports often keep millimetre STLs and scale them here.
       const scale = meshEl.getAttribute("scale") ? nums(meshEl.getAttribute("scale")) : null;
       meshJobs.push(
-        loadMesh(baseDir + file, materials[matName]).then((mesh) => {
+        loadMesh(file, materials[matName]).then((mesh) => {
           applyOrigin(mesh, origin);
           if (scale) mesh.scale.fromArray(scale);
           mesh.userData.file = file;
@@ -133,8 +143,7 @@ export async function loadURDF(url) {
   }
 
   const rootName = Object.keys(links).find(n => !childLinks.has(n));
-  if (!rootName) throw new Error(`URDF ${url}: no root link (cycle in the joint tree?)`);
+  if (!rootName) throw new Error(`${label}: no root link (cycle in the joint tree?)`);
 
-  await Promise.all(meshJobs);
-  return { root: links[rootName], links, joints };
+  return { root: links[rootName], links, joints, meshesLoaded: Promise.all(meshJobs) };
 }

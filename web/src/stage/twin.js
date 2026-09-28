@@ -3,6 +3,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { ARM } from "../config.js";
 import { loadURDF } from "../urdf.js";
 import { REST_JOINTS } from "../primitives.js";
+import { mountSO101, setJoints, jointValues as so101JointValues } from "../so101.js";
 
 /* =========================================================================
    Two SO-101 arms, side by side, as the operator sees them.
@@ -14,7 +15,6 @@ import { REST_JOINTS } from "../primitives.js";
    ========================================================================= */
 export const ARM_SPACING = 0.3;   // default; the rig's real spacing comes from prefs
 export const COLOURS = { follower: 0xfe5e0e, leader: 0xfebe42 };
-const JOINTS = ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll", "gripper"];
 
 export const scene = new THREE.Scene();
 
@@ -85,16 +85,7 @@ function tint(robot, colour) {
 async function loadArm(name) {
   const robot = await loadURDF(ARM.urdfUrl);
   const holder = new THREE.Group();
-  const inner = new THREE.Group();
-  // Same basis as the studio: URDF +X -> scene +Z, +Y -> +X, +Z -> +Y.
-  inner.setRotationFromMatrix(new THREE.Matrix4().makeBasis(
-    new THREE.Vector3(0, 0, 1),
-    new THREE.Vector3(1, 0, 0),
-    new THREE.Vector3(0, 1, 0)
-  ));
-  inner.position.set(0, 0, -ARM.panAxisOffsetZ);
-  inner.add(robot.root);
-  holder.add(inner);
+  holder.add(mountSO101(robot).holder);
   tint(robot, COLOURS[name]);
 
   const target = new THREE.Mesh(
@@ -166,12 +157,12 @@ export function setLayout(leaderSide, spacing = ARM_SPACING) {
 export function setPose(name, q) {
   const a = arms[name];
   if (!a) return;
-  JOINTS.forEach((j, i) => a.robot.joints[j]?.setValue(q[i]));
+  setJoints(a.robot, q);
 }
 
 export function jointValues(name) {
   const a = arms[name];
-  return a ? JOINTS.map((j) => a.robot.joints[j].value) : null;
+  return a ? so101JointValues(a.robot) : null;
 }
 
 export function setTarget(name, cart) {
