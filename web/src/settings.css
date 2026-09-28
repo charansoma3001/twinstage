@@ -218,6 +218,26 @@ body.settings {
 .guards { display: grid; gap: 0.75rem; margin-top: 0.75rem; font-size: 0.9rem; line-height: 1.5; color: var(--ink-60); }
 .guards b { color: var(--ink); font-weight: 600; }
 
+/* Buttons on the white panel need an edge and a shadow to read as buttons;
+   the ones in a segment already sit in a tray. */
+.panel .pill:not(.is-on):not([aria-pressed="true"]) {
+  background: #fff;
+  border-color: rgba(0, 11, 26, 0.12);
+  box-shadow: 0 1px 2px rgba(0, 11, 26, 0.06), 0 6px 14px -8px rgba(0, 11, 26, 0.3);
+}
+.panel .pill:not(.is-on):not([aria-pressed="true"]):hover { border-color: rgba(0, 11, 26, 0.24); }
+.panel .pill:not(.is-on):not([aria-pressed="true"]):active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0, 11, 26, 0.08);
+}
+.panel .segment .pill:not(.is-on) {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+/* A two-state setting: the icon says a click swaps it. */
+.pill.toggle { gap: 0.45rem; }
+
 /* ---- The twin ---------------------------------------------------------- */
 .viewport {
   position: relative;

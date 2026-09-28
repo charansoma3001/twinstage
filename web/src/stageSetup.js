@@ -27,9 +27,11 @@ function fillSelect(select, cams, current) {
   select.value = current;
 }
 
+const label = (id, text) => { el(id).querySelector("[data-label]").textContent = text; };
+
 function paintToggles(p) {
-  el("btn-leader-side").textContent = p.leaderSide === "left" ? "Left hand" : "Right hand";
-  el("btn-flip-labels").textContent = p.flipLabels ? "Flipped" : "As reported";
+  label("btn-leader-side", p.leaderSide === "left" ? "Left hand" : "Right hand");
+  label("btn-flip-labels", p.flipLabels ? "Flipped" : "As reported");
   el("btn-flip-labels").setAttribute("aria-pressed", String(p.flipLabels));
 }
 
