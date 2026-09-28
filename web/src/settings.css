@@ -243,6 +243,10 @@ body.settings {
   position: relative;
   min-height: 0;
   overflow: hidden;
+  /* A blur behind a card holding a WebGL canvas flickers the twin while the
+     panel beside it scrolls; the card is near-opaque, so nothing is lost. */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 .viewport-top {
   position: absolute;
