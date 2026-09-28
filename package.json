@@ -12,7 +12,7 @@
     "server:dry": "ARM_DRY=1 BASE_DRY=1 node --env-file-if-exists=.env server/index.js",
     "jog": "${ARM_PYTHON:-python3} drivers/jog.py",
     "lint": "eslint .",
-    "test": "vitest run --root web"
+    "test": "vitest run"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^1.0.1",
