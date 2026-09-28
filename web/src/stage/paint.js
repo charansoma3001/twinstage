@@ -2,7 +2,7 @@ import { CONFIG, PRESENTER, IS_DEMO } from "../config.js";
 import * as twin from "./twin.js";
 import { hands, fresh, setDetecting } from "./hands.js";
 import { PICK_CYCLE_S } from "../primitives.js";
-import { S, ARMS, el, primRuns, approach, TAU_UI } from "./state.js";
+import { S, ARMS, el, link, primRuns, approach, TAU_UI } from "./state.js";
 import { setTrackingRender } from "./view.js";
 
 /* =========================================================================
@@ -102,6 +102,20 @@ const TITLES = {
   manual: ["Settings open", ""]
 };
 
+/* What each status dot's colour means, for its tooltip. */
+const TONE_MEANS = {
+  off: "not on the bridge",
+  warn: "starting",
+  dry: "dry run: simulated, no motors move",
+  ok: "connected and live"
+};
+function paintStatusDot(id, name, tone) {
+  const dot = el(id);
+  dot.dataset.tone = tone;
+  const means = !link.isConnected() ? "bridge offline" : TONE_MEANS[tone];
+  dot.parentElement.title = `${name}: ${means}. Grey is offline, amber starting, blue a dry run, green live.`;
+}
+
 function armTone(a) {
   if (!a || !a.spawned) return "off";
   if (!a.ready) return "warn";
@@ -143,7 +157,7 @@ export function paintCards() {
     tag.dataset.tone = tone;
     const side = S.prefs.leaderSide === "left" ? (arm === "leader" ? "left" : "right") : (arm === "leader" ? "right" : "left");
     card.querySelector('[data-role="side"]').textContent = `${side[0].toUpperCase()}${side.slice(1)} hand`;
-    el(`st-${arm}`).dataset.tone = armTone(S.arms[arm]);
+    paintStatusDot(`st-${arm}`, arm === "leader" ? "Leader arm" : "Follower arm", armTone(S.arms[arm]));
   }
 
   // Hand slots, in the operator's left/right.
@@ -184,7 +198,7 @@ export function paintCards() {
   el("hands-error").classList.toggle("hidden", !hands.error);
   if (hands.error) el("hands-error").textContent = hands.error;
 
-  el("st-base").dataset.tone = !S.base || !S.base.spawned ? "off" : !S.base.ready ? "warn" : S.base.dryRun ? "dry" : "ok";
+  paintStatusDot("st-base", "LeKiwi base", !S.base || !S.base.spawned ? "off" : !S.base.ready ? "warn" : S.base.dryRun ? "dry" : "ok");
 }
 
 /* Swap text with a short fade, only when it actually changes. */
