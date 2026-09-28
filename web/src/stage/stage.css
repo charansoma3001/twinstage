@@ -1,5 +1,11 @@
 /* Stage-only styles; the design system is in ../ui/theme.css. */
 
+/* Sized for a laptop at 100% zoom: everything in rem is drawn at 90%, which
+   is how the big-screen layout first fitted a 1440x900 viewport. */
+@media (min-width: 1024px) {
+  html { font-size: 90%; }
+}
+
 /* Camera cards: a card leaving fades out to the left while its slot folds
    away, so the card below slides up into its place. */
 .slot {

@@ -18,9 +18,9 @@
       <div class="w-10 h-10 rounded-full bg-white/80 border border-white flex items-center justify-center shadow-sm">
         <span class="w-4 h-4 rounded-full bg-ember ring-4 ring-ember/20"></span>
       </div>
-      <span class="text-[17px] font-semibold tracking-tight">Twinstage</span>
+      <span class="text-[1.0625rem] font-semibold tracking-tight">Twinstage</span>
       <span id="presenter-event" class="pill hidden"></span>
-      <span id="presenter-name" class="ml-1 pl-4 border-l border-ink/10 text-[17px] font-semibold tracking-tight whitespace-nowrap hidden"></span>
+      <span id="presenter-name" class="ml-1 pl-4 border-l border-ink/10 text-[1.0625rem] font-semibold tracking-tight whitespace-nowrap hidden"></span>
     </div>
 
     <div class="order-1 w-full flex items-center justify-between gap-3 lg:order-none lg:w-auto lg:justify-start">
@@ -89,7 +89,7 @@
       <div class="card p-5 flex-1 min-h-0">
         <div class="eyebrow">What you're seeing</div>
         <div class="text-2xl font-light mt-2 leading-snug" id="explain-title">Move the leader, the follower copies it.</div>
-        <p class="text-[15px] text-ink-60 mt-3 leading-relaxed" id="explain-body">The leader arm has its motors switched off. Its joints are read fifty times a second and sent to the follower, which moves to match.</p>
+        <p class="text-[0.9375rem] text-ink-60 mt-3 leading-relaxed" id="explain-body">The leader arm has its motors switched off. Its joints are read fifty times a second and sent to the follower, which moves to match.</p>
       </div>
     </aside>
 
@@ -99,8 +99,8 @@
 
       <!-- Title block -->
       <div class="order-first relative lg:absolute lg:top-2 lg:left-2 z-10 pointer-events-none">
-        <div class="text-[15px] text-ink-60"><span id="crumb-a">SO-101 pair</span> · <b class="font-semibold text-ink" id="crumb-b">Leader &amp; follower</b></div>
-        <h1 id="stage-title" class="text-5xl lg:text-[88px] leading-[0.95] font-light tracking-tight mt-1 lg:mt-2">Teleoperation</h1>
+        <div class="text-[0.9375rem] text-ink-60"><span id="crumb-a">SO-101 pair</span> · <b class="font-semibold text-ink" id="crumb-b">Leader &amp; follower</b></div>
+        <h1 id="stage-title" class="text-5xl lg:text-[5.5rem] leading-[0.95] font-light tracking-tight mt-1 lg:mt-2">Teleoperation</h1>
         <div class="flex gap-2 mt-3 lg:mt-5 pointer-events-auto" id="subtitle-tags">
           <span class="tag" data-tone="ok" id="mode-tag">Idle</span>
           <span class="tag hidden" id="mode-note-tag"></span>
@@ -109,7 +109,7 @@
 
       <!-- Floating cards (arms view): leader grip left, QR + follower grip right -->
       <div id="float-cards"><div class="grid grid-cols-2 gap-3 lg:block">
-        <div class="grip-card relative lg:absolute lg:top-[11.5rem] lg:left-4 z-10 lg:w-72 rounded-[22px] p-4 lg:p-5 text-ink shadow-2xl"
+        <div class="grip-card relative lg:absolute lg:top-[11.5rem] lg:left-4 z-10 lg:w-72 rounded-[1.375rem] p-4 lg:p-5 text-ink shadow-2xl"
              style="background: linear-gradient(160deg, rgba(254,190,66,0.95), rgba(255,214,120,0.8)); backdrop-filter: blur(8px);">
           <div class="flex items-center justify-between">
             <div class="text-lg font-medium">Leader grip</div>
@@ -117,7 +117,7 @@
           </div>
           <div class="text-sm opacity-70 -mt-0.5" data-grip-caption="leader">Handle</div>
           <div class="flex items-baseline gap-1 mt-3">
-            <span data-grip-val="leader" class="text-[64px] leading-none font-light tabular-nums">0</span>
+            <span data-grip-val="leader" class="text-[4rem] leading-none font-light tabular-nums">0</span>
             <span class="text-xl opacity-70">%</span>
           </div>
           <div class="ticks ticks-dark mt-4" data-grip-ticks="leader"></div>
@@ -128,13 +128,13 @@
         <div id="presenter-card" class="card col-span-2 order-last relative lg:absolute lg:top-2 lg:right-4 z-10 lg:w-72 p-3 flex items-center gap-3 hidden">
           <img id="presenter-qr" alt="" class="w-24 h-24 rounded-xl bg-white p-1 shrink-0 hidden">
           <div class="leading-tight">
-            <div class="eyebrow !text-[10px]">Connect with me</div>
+            <div class="eyebrow !text-[0.625rem]">Connect with me</div>
             <div id="presenter-card-name" class="text-lg font-medium mt-1"></div>
             <div id="presenter-caption" class="text-sm text-ink-60 mt-0.5"></div>
           </div>
         </div>
 
-        <div class="grip-card relative lg:absolute lg:top-[11.5rem] lg:right-4 z-10 lg:w-72 rounded-[22px] p-4 lg:p-5 text-white shadow-2xl"
+        <div class="grip-card relative lg:absolute lg:top-[11.5rem] lg:right-4 z-10 lg:w-72 rounded-[1.375rem] p-4 lg:p-5 text-white shadow-2xl"
              style="background: linear-gradient(160deg, rgba(254,94,14,0.92), rgba(254,140,60,0.78)); backdrop-filter: blur(8px);">
           <div class="flex items-center justify-between">
             <div class="text-lg font-medium">Follower grip</div>
@@ -142,7 +142,7 @@
           </div>
           <div class="text-sm opacity-80 -mt-0.5">Jaw aperture</div>
           <div class="flex items-baseline gap-1 mt-3">
-            <span data-grip-val="follower" class="text-[64px] leading-none font-light tabular-nums">0</span>
+            <span data-grip-val="follower" class="text-[4rem] leading-none font-light tabular-nums">0</span>
             <span class="text-xl opacity-80">%</span>
           </div>
           <div class="ticks mt-4" data-grip-ticks="follower"></div>
@@ -233,7 +233,7 @@
             <span class="text-xl font-medium">LeKiwi base</span>
             <span class="text-sm text-ink-60" id="base-status">Bridge offline</span>
           </div>
-          <div class="mt-4 text-[15px] tabular-nums" id="base-vel">0.00 fwd  0.00 left  m/s   0°/s</div>
+          <div class="mt-4 text-[0.9375rem] tabular-nums" id="base-vel">0.00 fwd  0.00 left  m/s   0°/s</div>
           <div class="mt-1 text-sm text-ink-40 tabular-nums" id="base-odom">0.00 m from start   heading 0°</div>
           <div class="flex flex-wrap items-center gap-2 mt-4">
             <div class="segment" id="base-speed">
