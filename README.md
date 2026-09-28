@@ -17,7 +17,9 @@ It was built for live demos on a big screen, and grew into the tool we use to se
 
 ## Try it without a robot
 
-You need Node.js 22.9 or later and Python 3.10 or later. Nothing else: the simulation runs the real drivers in dry-run mode, which uses only Python's standard library.
+**In your browser:** <https://charansoma3001.github.io/twinstage/>. The bridge and the drivers run inside the page, simulated, so every mode works, and hands mode uses your own webcam.
+
+**On your machine,** with the real bridge and the real drivers in dry run. You need Node.js 22.9 or later and Python 3.10 or later. Nothing else: the simulation runs the real drivers in dry-run mode, which uses only Python's standard library.
 
 ```bash
 git clone https://github.com/charansoma3001/twinstage.git

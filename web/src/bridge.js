@@ -1,4 +1,5 @@
-import { BRIDGE_URL } from "./config.js";
+import { BRIDGE_URL, IS_DEMO } from "./config.js";
+import { createSimLink, simFetch } from "./sim/simBridge.js";
 
 /* =========================================================================
    Browser <-> bridge WebSocket, shared by both pages.
@@ -16,7 +17,15 @@ export function bridgeUrl(loc = location) {
   return `${loc.protocol === "https:" ? "wss" : "ws"}://${loc.host}`;
 }
 
+/* The bridge's HTTP API. The Pages demo answers it from the simulation. */
+export function apiFetch(path, init) {
+  return IS_DEMO ? simFetch(path, init) : fetch(path, init);
+}
+
 export function createBridgeLink({ reconnectMs = null } = {}) {
+  // The Pages demo has no bridge: the page runs one itself. IS_DEMO is fixed
+  // at build time, so a normal build drops the simulation entirely.
+  if (IS_DEMO) return createSimLink();
   let socket = null;
   let open = false;
   let wanted = false;

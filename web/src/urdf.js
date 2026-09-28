@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
+import { BASE_URL } from "./config.js";
 
 /* =========================================================================
    Minimal URDF reader -- enough for a serial chain with STL visuals.
@@ -31,6 +32,16 @@ function applyOrigin(obj, { xyz, rpy }) {
   obj.rotation.set(rpy[0], rpy[1], rpy[2], "ZYX");
 }
 
+/* A model is dozens of meshes fetched at once; one dropped request should
+   not blank the whole twin, so each gets two more tries. */
+function loadSTL(url, tries = 3) {
+  return new Promise((resolve, reject) => stlLoader.load(url, resolve, undefined, reject))
+    .catch((err) => {
+      if (tries <= 1) throw err;
+      return new Promise((r) => setTimeout(r, 300)).then(() => loadSTL(url, tries - 1));
+    });
+}
+
 export function meshFor(geometry, color) {
   const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({
     color: color || 0x9ca3af,
@@ -42,15 +53,16 @@ export function meshFor(geometry, color) {
   return mesh;
 }
 
-export async function loadURDF(url) {
+/* url is relative to where the pages are served ("urdf/SO101/...."), so the
+   same build works at / and under a GitHub Pages path. */
+export async function loadURDF(path) {
+  const url = /^([a-z]+:)?\//i.test(path) ? path : BASE_URL + path;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`URDF ${url}: ${res.status} ${res.statusText}`);
   const baseDir = url.slice(0, url.lastIndexOf("/") + 1);
   const robot = parseURDF(await res.text(), {
     label: `URDF ${url}`,
-    loadMesh: (file, color) => new Promise((resolve, reject) => {
-      stlLoader.load(baseDir + file, (geometry) => resolve(meshFor(geometry, color)), undefined, reject);
-    })
+    loadMesh: (file, color) => loadSTL(baseDir + file).then((geometry) => meshFor(geometry, color))
   });
   await robot.meshesLoaded;
   return robot;

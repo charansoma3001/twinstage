@@ -17,7 +17,7 @@ const isConnected = () => !!link && link.isConnected();
    endless grid that follows the base, so there is no room for the drift to be
    wrong against: the twin shows how the base is moving, not where it is.
    ========================================================================= */
-const URDF_URL = "/urdf/LeKiwi/LeKiwi.urdf";
+const URDF_URL = "urdf/LeKiwi/LeKiwi.urdf";   // under BASE_URL
 // Wheel centre is 17.9 mm above the URDF root; the omniwheel is 101.6 mm across.
 const FLOOR_OFFSET = 0.0508 - 0.0179;
 const WHEEL_JOINTS = ["base_left_wheel", "base_back_wheel", "base_right_wheel"];

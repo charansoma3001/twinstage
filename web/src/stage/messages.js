@@ -1,4 +1,5 @@
 import { S, ARMS, link } from "./state.js";
+import { apiFetch } from "../bridge.js";
 import { paintMode, paintPhone, runCountdown, toast } from "./paint.js";
 
 /* =========================================================================
@@ -71,7 +72,7 @@ export function onLinkDrop() {
 export async function loadMaps() {
   for (const arm of ARMS) {
     try {
-      const r = await fetch(`/api/joint-map?arm=${arm}`);
+      const r = await apiFetch(`api/joint-map?arm=${arm}`);
       S.maps[arm] = r.ok ? await r.json() : null;
     } catch {
       S.maps[arm] = null;

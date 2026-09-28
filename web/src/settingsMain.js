@@ -12,6 +12,8 @@ import { initRobotLink, streamJoints } from "./robotLink.js";
 import { initArmTwin, applyMirrorPose, twin } from "./armTwin.js";
 import { initStageSetup } from "./stageSetup.js";
 import { initSteps, onStepChange } from "./settingsSteps.js";
+import { showDemoBadge } from "./ui/demoBadge.js";
+import { IS_DEMO } from "./config.js";
 
 /* =========================================================================
    MAIN SIMULATION & ANIMATION LOOP
@@ -70,6 +72,12 @@ function animate() {
 }
 
 async function boot() {
+  showDemoBadge();
+  if (IS_DEMO) {
+    const lede = document.querySelector('[data-panel="connect"] .panel-lede');
+    lede.textContent = "This demo runs the bridge and simulated arm and base drivers inside your browser, " +
+      "so every step works without a robot. On your own machine the same page talks to the real bridge.";
+  }
   initSteps();
   await loadRobot(scene);
 

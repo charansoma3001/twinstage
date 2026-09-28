@@ -1,3 +1,4 @@
+import { BASE_URL } from "./config.js";
 import { createLandmarker, toLegacy } from "./handModel.js";
 
 /* =========================================================================
@@ -25,8 +26,8 @@ export function createHandTracker({ numHands, onResults }) {
   let warm = 0;
 
   tracker.ready = createLandmarker({
-    wasmBase: new URL("/mediapipe", location.origin).href,
-    model: new URL("/mediapipe/hand_landmarker.task", location.origin).href,
+    wasmBase: new URL(`${BASE_URL}mediapipe`, location.origin).href,
+    model: new URL(`${BASE_URL}mediapipe/hand_landmarker.task`, location.origin).href,
     numHands
   }).then((made) => {
     landmarker = made.landmarker;

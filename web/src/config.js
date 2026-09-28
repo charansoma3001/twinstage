@@ -56,7 +56,7 @@ export const ARM = {
   },
   // Distance from the wrist_roll origin out to the tool point, along the axis.
   toolAlongRoll: 0.0981274,
-  urdfUrl: "/urdf/SO101/so101_new_calib.urdf"
+  urdfUrl: "urdf/SO101/so101_new_calib.urdf"   // under BASE_URL
 };
 
 export const HAND_CONNECTIONS = [
@@ -88,6 +88,12 @@ export const WIZARD_STEPS = [
   { id: "br", name: "Bottom-Right (Near-Right)", desc: "Place hand at Near-Right corner closest to you." },
   { id: "bl", name: "Bottom-Left (Near-Left)", desc: "Place hand at Near-Left corner closest to you." }
 ];
+
+/* Built for GitHub Pages (npm run build:demo): no bridge, simulated arms. */
+export const IS_DEMO = !!(import.meta.env && import.meta.env.VITE_DEMO === "1");
+
+// Where the built pages live: "/" normally, "/twinstage/" on GitHub Pages.
+export const BASE_URL = (import.meta.env && import.meta.env.BASE_URL) || "/";
 
 export const BRIDGE_URL =
   (import.meta.env && import.meta.env.VITE_BRIDGE_URL) || "ws://localhost:8787";

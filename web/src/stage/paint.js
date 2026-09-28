@@ -1,4 +1,4 @@
-import { CONFIG, PRESENTER } from "../config.js";
+import { CONFIG, PRESENTER, IS_DEMO } from "../config.js";
 import * as twin from "./twin.js";
 import { hands, fresh, setDetecting } from "./hands.js";
 import { PICK_CYCLE_S } from "../primitives.js";
@@ -282,7 +282,9 @@ export function paintPhone() {
   const box = el("phone-urls");
   box.innerHTML = S.phoneUrls.length
     ? S.phoneUrls.map((u) => `<div class="text-lg font-medium text-ember break-all">${u.replace(/^http:\/\//, "")}</div>`).join("")
-    : '<span class="text-ink-40 text-sm">No network address found</span>';
+    : IS_DEMO
+      ? '<span class="text-ink-40 text-sm">Driving from a phone needs the bridge running on your own machine.</span>'
+      : '<span class="text-ink-40 text-sm">No network address found</span>';
 }
 
 export function showPresenter() {

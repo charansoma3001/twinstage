@@ -10,6 +10,7 @@ import { renderer, container, resize } from "./view.js";
 import { driveArm } from "./drive.js";
 import { buildJointRows, paintCards, paintLive, paintMode, paintPrim, showPresenter } from "./paint.js";
 import { onMessage, onLinkDrop, loadMaps } from "./messages.js";
+import { showDemoBadge } from "../ui/demoBadge.js";
 
 /* =========================================================================
    STAGE: the big-screen page.
@@ -89,6 +90,7 @@ async function startCameras() {
 }
 
 async function boot() {
+  showDemoBadge();
   showPresenter();
   loadCalibration();
   buildJointRows();

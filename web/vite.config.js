@@ -16,6 +16,8 @@ const pageRoutes = {
 };
 
 export default defineConfig({
+  // "/" normally; the Pages build sets VITE_BASE=/twinstage/.
+  base: process.env.VITE_BASE || "/",
   plugins: [pageRoutes],
   // One .env at the repo root serves both the bridge and the web build.
   envDir: resolve(__dirname, ".."),

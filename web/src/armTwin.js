@@ -1,3 +1,5 @@
+import { apiFetch } from "./bridge.js";
+import { IS_DEMO } from "./config.js";
 import { onBridgeMessage, sendCommand, setMirroring, setRelaxed } from "./robotLink.js";
 import { applyPose } from "./robot.js";
 import { BODY_JOINTS as BODY } from "./so101.js";
@@ -123,13 +125,14 @@ function setMirror(on) {
 async function save() {
   const note = el("twin-save-note");
   try {
-    const res = await fetch(`/api/joint-map?arm=${twin.arm}`, {
+    const res = await apiFetch(`api/joint-map?arm=${twin.arm}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(twin.map)
     });
     const body = await res.json();
-    note.textContent = res.ok ? "Saved. Restart the bridge to load it." : `Not saved: ${body.error}`;
+    const reload = IS_DEMO ? "Reload the page to load it." : "Restart the bridge to load it.";
+    note.textContent = res.ok ? `Saved. ${reload}` : `Not saved: ${body.error}`;
     note.dataset.tone = res.ok ? "ok" : "bad";
     if (res.ok) checkMaps();
   } catch (err) {
@@ -143,7 +146,7 @@ async function save() {
 function loadMap(arm) {
   twin.map = identityMap();
   paint();
-  fetch(`/api/joint-map?arm=${arm}`)
+  apiFetch(`api/joint-map?arm=${arm}`)
     .then((r) => r.json())
     .then((saved) => {
       if (!saved || twin.arm !== arm) return;
@@ -170,7 +173,7 @@ function selectArm(arm) {
 async function checkMaps() {
   try {
     const [follower, leader] = await Promise.all(["follower", "leader"].map(async (arm) => {
-      const res = await fetch(`/api/joint-map?arm=${arm}`);
+      const res = await apiFetch(`api/joint-map?arm=${arm}`);
       if (!res.ok) throw new Error(res.statusText);
       return !!(await res.json());
     }));

@@ -37,6 +37,8 @@ These are read when the pages are built, so rebuild after changing them.
 
 | Variable | Default | |
 |---|---|---|
+| `VITE_DEMO` | off | `1` builds the browser demo: no bridge, everything simulated in the page. `npm run build:demo` sets it. |
+| `VITE_BASE` | `/` | The path the pages are served under. `npm run build:demo` defaults it to `/twinstage/`, for GitHub Pages. |
 | `VITE_BRIDGE_URL` | `ws://localhost:8787` | The bridge, when the pages are served by the Vite dev server rather than the bridge. |
 | `VITE_PRESENTER_NAME` | none | Shows a presenter's name on the stage, for live demos. |
 | `VITE_PRESENTER_EVENT` | none | An event name, shown next to it. |

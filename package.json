@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite web",
     "build": "vite build web",
+    "build:demo": "VITE_DEMO=1 VITE_BASE=${VITE_BASE:-/twinstage/} vite build web",
     "preview": "vite preview web",
     "server": "node --env-file-if-exists=.env server/index.js",
     "start": "concurrently -n web,bridge -c cyan,magenta \"npm:dev\" \"npm:server\"",

@@ -1,4 +1,4 @@
-import { createBridgeLink } from "./bridge.js";
+import { createBridgeLink, apiFetch } from "./bridge.js";
 import { setStepStatus } from "./settingsSteps.js";
 
 /* =========================================================================
@@ -40,7 +40,7 @@ function deviceTag(d, name) {
 async function paintDevices() {
   const note = document.getElementById("connect-note");
   try {
-    const h = await (await fetch("/api/health")).json();
+    const h = await (await apiFetch("api/health")).json();
     for (const [name, d] of [["leader", h.arms.leader], ["follower", h.arms.follower], ["base", h.base]]) {
       const tag = document.querySelector(`[data-device="${name}"]`);
       const [text, tone] = deviceTag(d, name);

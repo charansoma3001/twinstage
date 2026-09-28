@@ -34,6 +34,10 @@ flowchart LR
 
 The drivers are children of the bridge, so they die with it, and a dead bridge cannot leave a powered arm behind. The base's driver is sent over `ssh` on every start and exits on its own if the bridge goes quiet.
 
+## The browser demo
+
+`npm run build:demo` builds the pages to run with no bridge at all, for GitHub Pages. They run the bridge's own modules (`server/modes.js`, `arms.js`, `base.js` and `hub.js`, which need nothing from Node) inside the page, with JavaScript ports of the drivers' dry runs in `web/src/sim/`. So the demo follows the same mode rules, refusals and drive ownership as a real bridge. Each tab runs its own. In teleop, the simulated leader moves by itself, since nobody is holding it.
+
 ## Units at each boundary
 
 | Where | Arm joints are |
