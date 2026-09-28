@@ -1,5 +1,7 @@
 import { onBridgeMessage, sendCommand, setMirroring, setRelaxed } from "./robotLink.js";
 import { applyPose } from "./robot.js";
+import { BODY_JOINTS as BODY } from "./so101.js";
+import { armToUrdf, identityMap } from "./jointMap.js";
 
 /* =========================================================================
    ARM TWIN: measuring the sim <-> hardware joint map with the render
@@ -21,22 +23,14 @@ import { applyPose } from "./robot.js";
    arm's reported joints, and you drag each offset until the picture matches
    the hardware in front of you. Picture compared to arm, no algebra between.
    ========================================================================= */
-const BODY = ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll"];
 const LABEL = {
   shoulder_pan: "J1 Pan", shoulder_lift: "J2 Lift", elbow_flex: "J3 Elbow",
   wrist_flex: "J4 W-Flex", wrist_roll: "J5 W-Roll"
 };
-const GRIPPER_RAD_MAX = 1.74533;
 const DEG = Math.PI / 180;
 
 const el = (id) => document.getElementById(id);
 
-// sign/offset are stored the way the driver wants them (sim -> arm); mirror
-// mode needs the inverse, hence toUrdf below.
-const identityMap = () => ({
-  ...Object.fromEntries(BODY.map((j) => [j, { sign: 1, offset_deg: 0 }])),
-  gripper: { closed_pct: 0, open_pct: 100 }
-});
 
 // Each arm has its own map; `arm` says which one the tool is measuring.
 export const twin = {
@@ -46,38 +40,25 @@ export const twin = {
   map: identityMap()
 };
 
-function toUrdfDeg(joint, reportedDeg) {
-  const m = twin.map[joint];
-  // arm = sign*sim + offset  =>  sim = sign*(arm - offset), since sign is +/-1.
-  return m.sign * (reportedDeg - m.offset_deg);
-}
-
 /* Poses the on-screen arm from what the hardware reports. */
 export function applyMirrorPose() {
   if (!twin.present) return false;
-  const q = {};
-  for (const j of BODY) q[j] = toUrdfDeg(j, twin.present[j] ?? 0) * DEG;
-  const g = twin.map.gripper;
-  const span = g.open_pct - g.closed_pct;
-  const frac = span === 0 ? 0 : ((twin.present.gripper ?? 0) - g.closed_pct) / span;
+  const q = armToUrdf(twin.map, twin.present);
   applyPose(
-    {
-      shoulder_pan: q.shoulder_pan, shoulder_lift: q.shoulder_lift,
-      elbow_flex: q.elbow_flex, wrist_flex: q.wrist_flex,
-      gripper: Math.max(0, Math.min(1, frac)) * GRIPPER_RAD_MAX
-    },
-    q.wrist_roll
+    { shoulder_pan: q[0], shoulder_lift: q[1], elbow_flex: q[2], wrist_flex: q[3], gripper: q[5] },
+    q[4]
   );
   return true;
 }
 
 function paint() {
-  for (const j of BODY) {
+  const sim = twin.present ? armToUrdf(twin.map, twin.present) : null;
+  BODY.forEach((j, i) => {
     const m = twin.map[j];
     const signBtn = el(`twin-sign-${j}`);
     const slider = el(`twin-offset-${j}`);
     const readout = el(`twin-read-${j}`);
-    if (!signBtn) continue;
+    if (!signBtn) return;
     signBtn.textContent = m.sign > 0 ? "+" : "−";
     signBtn.className = m.sign > 0
       ? "w-6 h-6 rounded bg-slate-800 border border-slate-700 text-slate-300 font-mono"
@@ -86,8 +67,8 @@ function paint() {
     const reported = twin.present ? twin.present[j] : null;
     readout.textContent = reported === null || reported === undefined
       ? `${m.offset_deg.toFixed(1)}°`
-      : `${m.offset_deg.toFixed(1)}° · arm ${reported.toFixed(1)}° → sim ${toUrdfDeg(j, reported).toFixed(1)}°`;
-  }
+      : `${m.offset_deg.toFixed(1)}° · arm ${reported.toFixed(1)}° → sim ${(sim[i] / DEG).toFixed(1)}°`;
+  });
   const g = el("twin-gripper-read");
   if (g) g.textContent = twin.present ? `${(twin.present.gripper ?? 0).toFixed(0)}%` : "--";
 }

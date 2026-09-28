@@ -3,7 +3,8 @@ import * as THREE from "three";
 import { CONFIG, PRESENTER } from "../config.js";
 import { loadCalibration } from "../persist.js";
 import { loadPrefs, savePrefs, onPrefsChange, openCamera } from "../prefs.js";
-import * as link from "./link.js";
+import { createBridgeLink } from "../bridge.js";
+import { armToUrdf } from "../jointMap.js";
 import { keepOut, ikJoints, inwardLimit as keepOutLimit } from "./keepout.js";
 import * as twin from "./twin.js";
 import { hands, fresh, startHands, restartHands, setHandPrefs, setDetecting } from "./hands.js";
@@ -23,7 +24,6 @@ import {
    the twin shows what the arms report.
    ========================================================================= */
 const ARMS = ["leader", "follower"];
-const BODY = ["shoulder_pan", "shoulder_lift", "elbow_flex", "wrist_flex", "wrist_roll"];
 const JOINT_LABEL = ["Pan", "Lift", "Elbow", "W-Flex", "W-Roll", "Grip"];
 const GRIPPER_RAD_MAX = CONFIG.limits[5].max;
 const DEG = Math.PI / 180;
@@ -31,6 +31,8 @@ const SEND_MS = 20;
 const EMA = 0.35;
 
 const el = (id) => document.getElementById(id);
+// The big screen should never need a click to come back.
+const link = createBridgeLink({ reconnectMs: 1000 });
 
 const S = {
   view: "arms",
@@ -79,16 +81,7 @@ new ResizeObserver(resize).observe(container);
 
 /* ---------------------------------------------------------------------- */
 function toUrdf(arm, pos) {
-  const m = S.maps[arm] || S.maps.follower;
-  const q = BODY.map((j) => {
-    const e = m?.[j] || { sign: 1, offset_deg: 0 };
-    return e.sign * ((pos[j] ?? 0) - e.offset_deg) * DEG;
-  });
-  const g = m?.gripper || { closed_pct: 0, open_pct: 100 };
-  const span = g.open_pct - g.closed_pct || 100;
-  const frac = Math.max(0, Math.min(1, ((pos.gripper ?? 0) - g.closed_pct) / span));
-  q.push(frac * GRIPPER_RAD_MAX);
-  return q;
+  return armToUrdf(S.maps[arm] || S.maps.follower, pos);
 }
 
 
@@ -525,10 +518,12 @@ function onMessage(msg) {
     S.base = S.base || { spawned: true };
     if (msg.kind === "ready") Object.assign(S.base, { spawned: true, ready: true, dryRun: msg.dry_run });
     if (msg.kind === "exit") S.base.ready = false;
-  } else if (msg.type === "link" && !msg.open) {
-    S.arms = { leader: null, follower: null };
-    S.base = null;
   }
+}
+
+function onLinkDrop() {
+  S.arms = { leader: null, follower: null };
+  S.base = null;
 }
 
 function paintPhone() {
@@ -666,6 +661,7 @@ async function boot() {
   });
 
   link.onMessage(onMessage);
+  link.onClose(onLinkDrop);
   link.onOpen(() => loadMaps());
   // Before connecting, so the base twin hears the bridge's hello too.
   initBaseTwin({ renderer, container, link });
