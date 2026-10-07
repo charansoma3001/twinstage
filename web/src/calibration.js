@@ -58,6 +58,14 @@ function persist() {
   if (ok) setStepStatus("table", "Saved");
 }
 
+/* The hand camera's mirror has a button here and one in the Cameras step;
+   both go through this and repaint on the event. */
+export function setVideoMirrored(on) {
+  state.isVideoMirrored = on;
+  persist();
+  document.dispatchEvent(new Event("twinstage:mirror"));
+}
+
 export function initCalibration() {
   const videoElement = el("webcam-video");
 
@@ -120,11 +128,8 @@ export function initCalibration() {
     btnInvZ.setAttribute("aria-pressed", String(state.isInvertZ));
   };
 
-  btnMirror.addEventListener("click", () => {
-    state.isVideoMirrored = !state.isVideoMirrored;
-    paintToggles();
-    persist();
-  });
+  btnMirror.addEventListener("click", () => setVideoMirrored(!state.isVideoMirrored));
+  document.addEventListener("twinstage:mirror", paintToggles);
 
   btnInvX.addEventListener("click", () => {
     state.isInvertX = !state.isInvertX;

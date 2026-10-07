@@ -11,7 +11,8 @@ const DEFAULTS = {
   handsCameraId: "",
   followerCameraId: "",
   handsCameraRot: 0,      // degrees, 0 or 180: a camera mounted upside down
-  followerCameraRot: 180, // the follower's camera hangs upside down on its wrist
+  followerCameraRot: 0,
+  followerCameraMirror: false, // flip the follower's picture left to right
   camerasOpen: false,     // the stage's camera column, folded away by default
   leaderSide: "left",     // which half of the calibrated area, and which hand, drives the leader
   flipLabels: false,      // MediaPipe labels assume a selfie view; top-down can read them swapped

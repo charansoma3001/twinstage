@@ -1,5 +1,7 @@
 import { loadPrefs, savePrefs, listCameras } from "./prefs.js";
 import { setStepStatus } from "./settingsSteps.js";
+import { setVideoMirrored } from "./calibration.js";
+import { state } from "./state.js";
 
 /* Settings-page controls for the stage rig: camera roles and rotation, and
    hand -> arm. */
@@ -37,6 +39,10 @@ function paintToggles(p) {
   for (const [id, key] of [["btn-rot-hands", "handsCameraRot"], ["btn-rot-follower", "followerCameraRot"]]) {
     label(id, p[key] === 180 ? "Upside down" : "Upright");
     el(id).setAttribute("aria-pressed", String(p[key] === 180));
+  }
+  for (const [id, on] of [["btn-mirror-hands", state.isVideoMirrored], ["btn-mirror-follower", p.followerCameraMirror]]) {
+    label(id, on ? "Mirrored" : "Not mirrored");
+    el(id).setAttribute("aria-pressed", String(on));
   }
   // The calibration preview is the hand camera: turned the same way as on the stage.
   for (const id of ["webcam-video", "hand-canvas"]) el(id).classList.toggle("rotate-180", p.handsCameraRot === 180);
@@ -76,6 +82,11 @@ export function initStageSetup() {
   for (const [id, key] of [["btn-rot-hands", "handsCameraRot"], ["btn-rot-follower", "followerCameraRot"]]) {
     el(id).addEventListener("click", () => paintToggles(savePrefs({ [key]: loadPrefs()[key] === 180 ? 0 : 180 })));
   }
+  el("btn-mirror-hands").addEventListener("click", () => setVideoMirrored(!state.isVideoMirrored));
+  document.addEventListener("twinstage:mirror", () => paintToggles(loadPrefs()));
+  el("btn-mirror-follower").addEventListener("click", () => {
+    paintToggles(savePrefs({ followerCameraMirror: !loadPrefs().followerCameraMirror }));
+  });
   for (const [id, key] of [["in-arm-spacing", "armSpacingCm"], ["in-min-gap", "minGapCm"]]) {
     const input = el(id);
     input.value = loadPrefs()[key];

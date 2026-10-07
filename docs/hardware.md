@@ -63,7 +63,7 @@ The twin needs to know how each real joint lines up with the model's. Measure it
 - **The hand camera** looks straight down at the table from above, with both hands in view. Any USB webcam works; it is read at 640×480, which is also the size the table is calibrated at. Hand tracking runs in the browser, on the GPU.
 - **The follower camera** is optional. It is shown on the stage so an audience sees the real arm next to its twin.
 
-Choose which camera is which in **Settings → Cameras & hands**. The choice is saved in the browser, so choose again on a new machine.
+Choose which camera is which in **Settings → Cameras & hands**. Each camera can also be turned upside down or mirrored left to right there, for however it is mounted. The choice is saved in the browser, so choose again on a new machine.
 
 ## LeKiwi base
 

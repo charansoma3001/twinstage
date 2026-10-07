@@ -23,7 +23,7 @@ The calibration is saved in the browser as you capture it. An open stage in anot
 
 ## The three switches
 
-- **Mirror preview** flips the camera preview left to right, so it matches how you look at the table. It does not change the mapping.
+- **Mirror preview** flips the camera preview left to right, so it matches how you look at the table. It is the same setting as the hand camera's mirror in **Cameras & hands**. Set it before capturing corners: the corners are captured as the preview shows them, so flipping it afterwards swaps left and right.
 - **Swap left/right** reverses side to side in the mapping to the table. It is on by default, which is what makes your hand moving to your left move the arm to your left when you stand behind the arms, the way the stage shows them. If your hand and the arm move opposite ways, change it.
 - **Swap near/far** does the same for towards and away from the arms.
 

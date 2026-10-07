@@ -109,6 +109,7 @@ function setCamerasOpen(open) {
 function paintRotation() {
   setHandPrefs({ upsideDown: S.prefs.handsCameraRot === 180 });
   el("follower-video").classList.toggle("rotate-180", S.prefs.followerCameraRot === 180);
+  el("follower-video").classList.toggle("-scale-x-100", S.prefs.followerCameraMirror);
 }
 
 let followerOpening = 0;

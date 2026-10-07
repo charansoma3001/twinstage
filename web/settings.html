@@ -83,12 +83,14 @@
             <div class="flex gap-2">
               <select id="sel-cam-hands" class="select flex-1 min-w-0"></select>
               <button id="btn-rot-hands" class="pill toggle shrink-0" title="Turn the picture the right way up for a camera mounted upside down. Tracking is unchanged."><svg class="shrink-0 opacity-50" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg><span data-label>Upright</span></button>
+              <button id="btn-mirror-hands" class="pill toggle shrink-0" title="Flip the picture left to right. Set this before calibrating the table: the corners are captured as the picture shows them."><svg class="shrink-0 opacity-50" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M9 7L4 12l5 5V7zM15 7l5 5-5 5V7z"/></svg><span data-label>Not mirrored</span></button>
             </div>
           </div>
           <div class="field"><label for="sel-cam-follower">Follower camera, shown on the stage only</label>
             <div class="flex gap-2">
               <select id="sel-cam-follower" class="select flex-1 min-w-0"></select>
               <button id="btn-rot-follower" class="pill toggle shrink-0" title="Turn the picture the right way up for a camera mounted upside down"><svg class="shrink-0 opacity-50" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></svg><span data-label>Upright</span></button>
+              <button id="btn-mirror-follower" class="pill toggle shrink-0" title="Flip the picture left to right"><svg class="shrink-0 opacity-50" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M9 7L4 12l5 5V7zM15 7l5 5-5 5V7z"/></svg><span data-label>Not mirrored</span></button>
             </div>
           </div>
           <button id="btn-cam-refresh" class="pill">Find cameras</button>
