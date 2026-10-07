@@ -2,6 +2,8 @@
 
 Live 3D digital twins for [LeRobot](https://github.com/huggingface/lerobot) arms and bases, in the browser. Drive a pair of SO-101 arms with a leader arm, with your bare hands under a camera, or with scripted task primitives. Drive a LeKiwi base from the keyboard or your phone. The twin always shows what the hardware is doing, and nothing moves without passing the same safety guards.
 
+**[Try it in your browser](https://charansoma3001.github.io/twinstage/)** · **[Read the docs](https://charansoma3001.github.io/twinstage/docs/)**
+
 ![The stage: two SO-101 twins, their grip gauges and joint readings](docs/images/stage.png)
 
 It was built for live demos on a big screen, and grew into the tool we use to set up and debug the arms themselves.
@@ -44,6 +46,8 @@ npm run server                # live
 Before hands mode will drive a live arm, measure its joint map in **Settings → Joint map**. [Getting started](docs/getting-started.md) walks through it from nothing, one arm at a time.
 
 ## Documentation
+
+Also online, with a sidebar, at <https://charansoma3001.github.io/twinstage/docs/>.
 
 | | |
 |---|---|
