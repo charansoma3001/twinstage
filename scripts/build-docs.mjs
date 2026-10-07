@@ -42,14 +42,23 @@ function siteHref(href, src) {
 function render(page) {
   const md = readFileSync(join(ROOT, page.src), "utf8");
   const marked = new Marked(gfmHeadingId());
+  let diagrams = false;
   marked.use({
     walkTokens(token) {
       if (token.type === "link" || token.type === "image") token.href = siteHref(token.href, page.src);
+    },
+    renderer: {
+      // GitHub draws mermaid blocks; on the site Mermaid itself does.
+      code({ text, lang }) {
+        if (lang !== "mermaid") return false;
+        diagrams = true;
+        return `<pre class="mermaid">${escape(text)}</pre>\n`;
+      }
     }
   });
   const html = marked.parse(md);
   const h1 = md.match(/^# (.+)$/m)?.[1] || page.title;
-  return { html, h1 };
+  return { html, h1, diagrams };
 }
 
 function nav(current) {
@@ -101,6 +110,8 @@ article pre code { background: none; padding: 0; color: inherit; font-size: 0.85
 article table { border-collapse: collapse; width: 100%; display: block; overflow-x: auto; font-size: 0.93rem; }
 article th, article td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--line); vertical-align: top; }
 article th { font-weight: 600; }
+article pre.mermaid { background: var(--card); color: var(--ink); border: 1px solid var(--line); text-align: center; }
+article pre.mermaid:not([data-processed]) { color: transparent; }
 article blockquote { margin: 1rem 0; padding: 0.6rem 1rem; background: var(--sun-soft); border-radius: 10px; }
 article blockquote p { margin: 0; }
 footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--line); font-size: 0.9rem; color: var(--ink-60); }
@@ -115,8 +126,24 @@ footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--line);
 }
 `;
 
+// Loaded only on pages with a diagram, in the docs' own colours.
+const MERMAID = `
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "base",
+      fontFamily: "Urbanist, system-ui, sans-serif",
+      themeVariables: {
+        primaryColor: "#ffffff", primaryBorderColor: "#fe5e0e", primaryTextColor: "#000b1a",
+        lineColor: "#5b6270", clusterBkg: "#fff1d1", clusterBorder: "#febe42",
+        edgeLabelBackground: "#f6f3ee", fontSize: "15px"
+      }
+    });
+  </script>`;
+
 function page(p) {
-  const { html, h1 } = render(p);
+  const { html, h1, diagrams } = render(p);
   const title = p.slug === "index" ? "Twinstage docs" : `${h1} · Twinstage docs`;
   return `<!doctype html>
 <html lang="en">
@@ -146,7 +173,7 @@ function page(p) {
 ${html}
       <footer><a href="${REPO}/edit/main/${p.src}">Edit this page on GitHub</a></footer>
     </article>
-  </div>
+  </div>${diagrams ? MERMAID : ""}
 </body>
 </html>
 `;
