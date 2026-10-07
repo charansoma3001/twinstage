@@ -24,6 +24,10 @@ Teleop needs both arms' drivers running. It is refused otherwise.
 
 One overhead camera tracks both hands, and each hand drives one arm:
 
+![Hands mode: a hand held flat over the table, the follower arm in front of it, and the stage showing the hand camera's view with the hand's skeleton](images/hands-mode.jpg)
+
+*One hand driving the follower. The hand camera on the lamp arm sees the hand (its view is top right on the screen, with the skeleton drawn over it), and the follower in front copies it. The screen shows an earlier version of the stage.*
+
 - **Where the palm is** on the calibrated table sets where the arm reaches.
 - **How high the palm is** sets the tool height, between the table and the hover height you calibrated.
 - **Thumb spread** (the angle between thumb and index finger) opens and closes the gripper.

@@ -2,6 +2,10 @@
 
 Twinstage drives the hardware through LeRobot, so anything LeRobot can calibrate and read, the drivers can use. This page covers what is specific to Twinstage.
 
+![A demo rig: an SO-101 arm at each side of a table, a webcam on a desk-lamp arm looking straight down at the table between them, and the stage on a screen behind](images/rig.jpg)
+
+*A demo rig. One arm stands at each side of the table, and the hand camera hangs over the middle on a desk-lamp arm, looking straight down. The arm on the right carries the follower camera on its wrist. The screen shows an earlier version of the stage.*
+
 ## SO-101 arms
 
 The follower is the arm that does the work. The leader is the lighter, hand-held arm; in teleop you move it and the follower copies it, and in hands mode it is powered and driven like the follower.
