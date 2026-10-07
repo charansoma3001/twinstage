@@ -21,7 +21,14 @@ export const scene = new THREE.Scene();
 
 let camera = null;
 let controls = null;
-const arms = {};           // name -> { holder, robot, target }
+const arms = {};           // name -> { holder, robot, target, stations, block, toolPoint }
+// The pick & place block: a square post the closed jaws (gripper 0.1) hold.
+// Measured on the meshes at the pick pose: the fixed jaw's inner face is
+// 6 mm behind the tool point, the closed jaws leave 23 to 28 mm, and their
+// tips stop 20 to 30 mm above the table, so a short cube would sit under them.
+const BLOCK_W = 0.022;
+const BLOCK_H = 0.04;
+const BLOCK_AHEAD = -0.006 + BLOCK_W / 2;   // block centre past the tool point, along the reach
 
 function floor() {
   addFloor(scene);
@@ -41,7 +48,8 @@ function floor() {
 async function loadArm(name) {
   const robot = await loadURDF(ARM.urdfUrl);
   const holder = new THREE.Group();
-  holder.add(mountSO101(robot).holder);
+  const { holder: mount, toolPoint } = mountSO101(robot);
+  holder.add(mount);
   paintSO101(robot, COLOURS[name]);
 
   const target = new THREE.Mesh(
@@ -72,8 +80,11 @@ async function loadArm(name) {
   stations.visible = false;
   holder.add(stations);
 
+  const block = makeBlock();
+  holder.add(block);
+
   scene.add(holder);
-  arms[name] = { holder, robot, target, stations };
+  arms[name] = { holder, robot, target, stations, block, toolPoint, held: null };
 }
 
 function labelSprite(text) {
@@ -98,6 +109,59 @@ export function setStations(name, stations) {
   a.stations.visible = !!stations;
   if (!stations) return;
   a.stations.children.forEach((g, i) => g.position.set(stations[i].x, 0.002, stations[i].z));
+}
+
+/* The block, in the arm's frame:
+   - null hides it;
+   - { at: {x, z} } sets it down on the table there;
+   - "held" grips it where it is and carries it with the jaws;
+   - "released" lets go, and it drops straight down onto the table. */
+const m = new THREE.Matrix4();
+const yaw = new THREE.Euler();
+export function setBlock(name, how) {
+  if (arms[name]) placeBlock(arms[name], how);
+}
+
+/* The block pick & place moves, so the routine has something to carry. */
+export function makeBlock() {
+  const block = new THREE.Mesh(
+    new THREE.BoxGeometry(BLOCK_W, BLOCK_H, BLOCK_W),
+    new THREE.MeshStandardMaterial({ color: 0x1f3a5f, roughness: 0.6, metalness: 0.05 })
+  );
+  block.castShadow = true;
+  block.receiveShadow = true;
+  block.visible = false;
+  return block;
+}
+
+/* a: { holder, toolPoint, block, held }, one arm's parts. */
+export function placeBlock(a, how) {
+  const b = a.block;
+  b.visible = !!how;
+  if (!how) { a.held = null; return; }
+  if (how === "held") {
+    a.holder.updateMatrixWorld(true);
+    // The block keeps whatever offset from the tool it had when gripped, so
+    // a pick that lands a little off does not make it jump into the jaws.
+    if (!a.held) a.held = m.copy(a.toolPoint.matrixWorld).invert().multiply(b.matrixWorld).clone();
+    m.copy(a.holder.matrixWorld).invert().multiply(a.toolPoint.matrixWorld).multiply(a.held);
+    m.decompose(b.position, b.quaternion, b.scale);
+    return;
+  }
+  if (how === "released") {
+    if (!a.held) return;
+    a.held = null;
+    b.position.y = BLOCK_H / 2;
+    yaw.setFromQuaternion(b.quaternion, "YXZ");
+    b.rotation.set(0, yaw.y, 0);
+    return;
+  }
+  // Set down where the jaws will close on it: just past the tool point along
+  // the arm's reach, faces square to the jaws.
+  a.held = null;
+  const heading = Math.atan2(how.at.x, how.at.z);
+  b.position.set(how.at.x + BLOCK_AHEAD * Math.sin(heading), BLOCK_H / 2, how.at.z + BLOCK_AHEAD * Math.cos(heading));
+  b.rotation.set(0, heading, 0);
 }
 
 /* leaderSide "left" puts the leader on the operator's left, i.e. +X. */

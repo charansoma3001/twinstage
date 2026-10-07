@@ -62,6 +62,21 @@ const shuttle = {
   placeAt: (k) => (k % 2 === 0 ? STATION_B : STATION_A)
 };
 
+/* Where the block is at time t into pick & place, for the twin: given the
+   two stations on the table, { at } on the first pick's station, "held"
+   while the jaws are shut on it, and "released" otherwise, which leaves it
+   where it was put down. The jaws close from 2.8 s and the arm lifts at
+   3.8 s, so it is gripped at 3.6 s: the stage's smoothing has the jaws shut
+   by then and the arm has not started to move. It is let go at 6.2 s, when
+   the jaws start to open at the table. */
+export function blockState(t, stations) {
+  const k = Math.floor(t / PICK_CYCLE_S);
+  const cycle = t % PICK_CYCLE_S;
+  if (cycle >= 3.6 && cycle < 6.2) return "held";
+  if (k === 0 && cycle < 3.6) return { at: stations[0] };
+  return "released";
+}
+
 export function primitiveTarget(name, t, opts = shuttle) {
   if (name === "pickAndPlace") return pickAndPlace(t, opts);
   if (name === "pinchTest") return pinch(t);

@@ -3,7 +3,7 @@ import { keepOut, inwardLimit as keepOutLimit } from "./keepout.js";
 import * as twin from "./twin.js";
 import { fresh } from "./hands.js";
 import {
-  primitiveTarget, mirror, mirrorStation, REST_JOINTS, STATION_A, STATION_B, PICK_HEIGHT
+  primitiveTarget, mirror, mirrorStation, REST_JOINTS, STATION_A, STATION_B, PICK_HEIGHT, blockState
 } from "../primitives.js";
 import { S, link, isLeftArm, primRuns, approach, TAU_POSE } from "./state.js";
 
@@ -49,6 +49,7 @@ function runPrimitive(arm, now) {
     twin.setPose(arm, REST_JOINTS);
     twin.setTarget(arm, null);
     twin.setStations(arm, null);
+    twin.setBlock(arm, null);
     S.filtered[arm] = null;
     stream(arm, REST_JOINTS, now);
     return;
@@ -60,9 +61,11 @@ function runPrimitive(arm, now) {
   if (!q) return;
   twin.setPose(arm, q);
   twin.setTarget(arm, cart);
-  twin.setStations(arm, name === "pickAndPlace"
+  const stations = name === "pickAndPlace"
     ? [STATION_A, STATION_B].map((st) => stationOnTable(left ? mirrorStation(st) : st, left))
-    : null);
+    : null;
+  twin.setStations(arm, stations);
+  twin.setBlock(arm, stations ? blockState((now - t0) / 1000, stations) : null);
   stream(arm, q, now);
 }
 
@@ -81,6 +84,7 @@ export function driveArm(arm, now, dt) {
     return;
   }
   twin.setStations(arm, null);
+  twin.setBlock(arm, null);
   // Follower-only hands: the leader is not driven and shows its readings.
   const handDriven = S.mode === "hands" && (S.handsArms === "both" || arm === "follower");
   if (handDriven) {
