@@ -1,15 +1,18 @@
 import * as THREE from "three";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { MeshoptDecoder } from "meshoptimizer/decoder";
 import { BASE_URL } from "./config.js";
 
 /* =========================================================================
-   Minimal URDF reader -- enough for a serial chain with STL visuals.
+   Minimal URDF reader -- enough for a serial chain with STL or GLB visuals.
 
    Builds one THREE.Group per link. Each joint contributes two nested groups:
    a fixed origin frame (the URDF <origin>) and an actuated rotation inside
    it, so setValue() only ever touches a quaternion.
    ========================================================================= */
 const stlLoader = new STLLoader();
+const gltfLoader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 
 const nums = (s) => s.trim().split(/\s+/).map(Number);
 
@@ -32,14 +35,52 @@ function applyOrigin(obj, { xyz, rpy }) {
   obj.rotation.set(rpy[0], rpy[1], rpy[2], "ZYX");
 }
 
+/* The build ships meshes as quantized, meshopt-compressed GLBs
+   (scripts/compress-meshes.mjs). Turn one back into what STLLoader gives:
+   float positions with the quantization undone, unshared vertices and flat
+   face normals. */
+export function geometryFromGLB(gltf) {
+  let found = null;
+  gltf.scene.updateMatrixWorld(true);
+  gltf.scene.traverse((o) => { if (o.isMesh && !found) found = o; });
+  if (!found) throw new Error("GLB has no mesh");
+  const src = found.geometry.getAttribute("position");
+  // three r128 hands normalized integers back raw, so undo that here.
+  const array = src.isInterleavedBufferAttribute ? src.data.array : src.array;
+  const bits = 8 * array.BYTES_PER_ELEMENT;
+  const unsigned = array instanceof Uint8Array || array instanceof Uint16Array;
+  const quantized = src.normalized && !(array instanceof Float32Array);
+  const max = 2 ** (unsigned ? bits : bits - 1) - 1;
+  const value = (v) => (quantized ? Math.max(v / max, -1) : v);
+  const pos = new Float32Array(src.count * 3);
+  for (let i = 0; i < src.count; i++) {
+    pos[3 * i] = value(src.getX(i));
+    pos[3 * i + 1] = value(src.getY(i));
+    pos[3 * i + 2] = value(src.getZ(i));
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  geometry.setIndex(found.geometry.index);
+  geometry.applyMatrix4(found.matrixWorld);
+  const flat = geometry.toNonIndexed();
+  flat.computeVertexNormals();
+  return flat;
+}
+
+function fetchMesh(url) {
+  if (/\.glb$/i.test(url)) {
+    return new Promise((resolve, reject) => gltfLoader.load(url, resolve, undefined, reject)).then(geometryFromGLB);
+  }
+  return new Promise((resolve, reject) => stlLoader.load(url, resolve, undefined, reject));
+}
+
 /* A model is dozens of meshes fetched at once; one dropped request should
    not blank the whole twin, so each gets two more tries. */
-function loadSTL(url, tries = 3) {
-  return new Promise((resolve, reject) => stlLoader.load(url, resolve, undefined, reject))
-    .catch((err) => {
-      if (tries <= 1) throw err;
-      return new Promise((r) => setTimeout(r, 300)).then(() => loadSTL(url, tries - 1));
-    });
+function loadMeshGeometry(url, tries = 3) {
+  return fetchMesh(url).catch((err) => {
+    if (tries <= 1) throw err;
+    return new Promise((r) => setTimeout(r, 300)).then(() => loadMeshGeometry(url, tries - 1));
+  });
 }
 
 export function meshFor(geometry, color) {
@@ -62,7 +103,7 @@ export async function loadURDF(path) {
   const baseDir = url.slice(0, url.lastIndexOf("/") + 1);
   const robot = parseURDF(await res.text(), {
     label: `URDF ${url}`,
-    loadMesh: (file, color) => loadSTL(baseDir + file).then((geometry) => meshFor(geometry, color))
+    loadMesh: (file, color) => loadMeshGeometry(baseDir + file).then((geometry) => meshFor(geometry, color))
   });
   await robot.meshesLoaded;
   return robot;

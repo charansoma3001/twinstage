@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import { resolve } from "node:path";
+import { compressMeshes } from "../scripts/compress-meshes.mjs";
 
 // /settings and /drive are pages, not SPA routes: map them onto their HTML
 // files in development the same way the bridge does in production.
@@ -15,10 +16,19 @@ const pageRoutes = {
   }
 };
 
+// The STLs in public/ are copied as they are; swap them for compressed GLBs.
+const meshes = {
+  name: "compress-meshes",
+  apply: "build",
+  async closeBundle() {
+    await compressMeshes(resolve(__dirname, "../dist"));
+  }
+};
+
 export default defineConfig({
   // "/" normally; the Pages build sets VITE_BASE=/twinstage/.
   base: process.env.VITE_BASE || "/",
-  plugins: [pageRoutes],
+  plugins: [pageRoutes, meshes],
   // One .env at the repo root serves both the bridge and the web build.
   envDir: resolve(__dirname, ".."),
   server: {

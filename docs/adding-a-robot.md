@@ -19,7 +19,7 @@ An arm is six named joints: `shoulder_pan`, `shoulder_lift`, `elbow_flex`, `wris
 
 Arms with a pan joint, three pitch joints and a wrist roll, like the SO-100 or Koch, need no new code on the page, only new numbers:
 
-1. **The URDF.** Put it and its meshes under `web/public/urdf/<Arm>/`, and point `ARM.urdfUrl` at it.
+1. **The URDF.** Put it and its meshes under `web/public/urdf/<Arm>/`, and point `ARM.urdfUrl` at it. Keep the meshes as STL: the build swaps them for compressed GLBs and merges identical ones (`scripts/compress-meshes.mjs`).
 2. **The geometry.** Re-measure `ARM` in `web/src/config.js` from the new URDF: the shoulder's offset from the pan axis, the three link lengths, and each link's heading at the zero pose. The comment above `ARM` shows how the SO-101's were derived. Update the joint limits from the URDF too.
 3. **The mounting.** If the URDF's axes differ from the SO-101's (X forward, Z up), change the basis in `web/src/so101.js`, and the tool point's distance along the wrist roll axis (`ARM.toolAlongRoll`).
 4. **The hull.** Point `scripts/build-so101-hull.mjs` at the new URDF and run `npm run build:hull`.
